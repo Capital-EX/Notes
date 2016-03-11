@@ -913,7 +913,7 @@ function gooi.newPanel(id, x, y, w, h, theLayout, group)
 	function p:drawSpecifics(fg)
 		--[[
 		love.graphics.rectangle("line", self.x, self.y, self.w, self.h)]]
-		love.graphics.rectangle("line", self.x, self.y, self.w, self.h)
+		--love.graphics.rectangle("line", self.x, self.y, self.w, self.h)
 		if self.layout.kind == "grid" then
 			love.graphics.setLineWidth(1)
 			love.graphics.setColor(0, 0, 0, 127)
