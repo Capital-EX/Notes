@@ -73,14 +73,8 @@ function love.load()
 		hidden     = false,
 		menuStates = {"Brush","Text","Closed"},
 		menuState  = "Brush",
-		show_hide  = function(self)
-			if self.hidden then
-				self.x = 0
-				self.hidden = false
-			else
-				self.x= -self.width
-				self.hidden = true
-			end
+		changeState  = function(self)
+			
 		end
 	}
 	gui   = love.graphics.newCanvas()
