@@ -73,8 +73,12 @@ function love.load()
 		hidden     = false,
 		menuStates = {"Brush","Text","Closed"},
 		menuState  = "Brush",
-		changeState  = function(self)
-			
+		changeState  = function(self, state)
+			gooi.setGroupEnabled(self.menuState.."_controlls", false)
+			gooi.setGroupVisible(self.menuState.."_controlls", false)
+			self.menuState = state
+			gooi.setGroupEnabled(self.menuState.."_controlls", true)
+			gooi.setGroupVisible(self.menuState.."_controlls", true)
 		end
 	}
 	gui   = love.graphics.newCanvas()
@@ -94,21 +98,29 @@ function love.load()
 		gooi.newSlider("sizeSlider"):setValue(2),
 		gooi.newCheck("toggleErase","Erase Mode"),
 	}
-	controlls.textMenu = gooi.newPanel("textControlls", controlls.x, controlls.y, controlls.width, controlls.height, "grid 9x1", "Text_controlls")
-	local i
 	for i = 1, #widgets do
 		widgets[i].group = "Brush_controlls"
 		controlls.brushMenu:add(widgets[i])
 	end
+	
 	controlls.controllSelector = gooi.newPanel("controllSelector",controlls.x+controlls.width,controlls.y,controlls.width/4,controlls.height, "grid 2x1", "controll_selector")
-	local widgets = {
+	widgets = {
 		gooi.newButton("BrushMenuButton","b\nr\nu\ns\nh\ne\ns"):setDirection("vertical"):onRelease(function(c) controlls:changeState("Brush") end),
 		gooi.newButton("TextMenuButton","t\ne\nx\nt"):setDirection("vertical"):onRelease(function(c) controlls:changeState("Text") end),
 	}
-	local i
 	for i = 1, #widgets do
 		widgets[i].group = "controll_selector"
 		controlls.controllSelector:add(widgets[i])
+	end
+	
+	controlls.textMenu = gooi.newPanel("textControlls", controlls.x, controlls.y, controlls.width, controlls.height, "grid 9x1", "Text_controlls")
+	widgets = {
+		gooi.newLabel("fontSizeLabel","Font Size"):setOrientation("center"),
+		gooi.newLabel("test2","test2"):setOrientation("center"),
+	}
+	for i = 1, #widgets do
+		widgets[i].group = "Text_controlls"
+		controlls.textMenu:add(widgets[i])
 	end
 	
 	love.graphics.setCanvas(gui)
@@ -116,6 +128,7 @@ function love.load()
 	love.graphics.setCanvas()
 	
 	controlls.controllSelector.layout.debug = true
+	controlls.textMenu.layout.debug = true
 end
 
 function love.draw()
@@ -159,4 +172,5 @@ function love.mousereleased()
 	gooi.released()
 	brush.isDown = false
 	brush.curLine = {}
+	
 end
