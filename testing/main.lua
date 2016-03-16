@@ -1,9 +1,16 @@
-require("./utf8")
 --[[
-	
-	todo, as late as possible: change the text area to allow for free form editing.
+#	Text area todo
+	Backspacing         [X]
+	Left Movement       [X]
+	Right Movement      [ ]
+	Free-form Movement  [ ]
+	Upward Movement     [ ]
+	Downward Movement   [ ]
 	
 ]]
+
+require("./utf8")
+
 
 
 function love.load()
@@ -37,7 +44,7 @@ function love.load()
 			tb.cursorLine      = 0                                        --Current of wrapped text
 			
 			tb.cursorX         = tb.font:getWrap(tb.plainText, tb.wrap)
-			tb.cursorY         = tb.fontHeight * tb.cursorIndex
+			tb.cursorY         = tb.fontHeight * math.max(tb.cursorLine,1)
 			
 			tb.showCursor      = true
 			tb.blinkDelay      = 0.5
@@ -88,11 +95,19 @@ function love.load()
 		)]]
 		love.graphics.points(
 			self.cursorX+self.x, 
-			self.cursorY + self.y - self.fontHeight
+			self.cursorY + self.y
 		)
 		love.graphics.setLineStyle("rough")
 	end
 	
+	textBox.meta.onReturn = function(self, key)
+		
+		
+	end
+	
+	textBox.meta.onBackspace = function(self, key)
+		
+	end
 	testerBox = textBox:new("", 100, 100)
 	
 	font = love.graphics.getFont()
@@ -130,64 +145,114 @@ function love.textinput(key, code)
 	local textBefore      = string.utf8sub(testerBox.plainText, 1, testerBox.cursorIndex)                          --Get the text behind the index
 	local textAfter       = string.utf8sub(testerBox.plainText, testerBox.cursorIndex+1,testerBox.plainText:len()) --Get the text after the index
 	local _, textWrapBefore = testerBox.font:getWrap(textBefore..key,testerBox.wrap)                               --Get the wrapping of the text behind the index
-	testerBox.plainText   = table.concat{textBefore,key,textAfter}                                                 --Put the new string together; Update plain text
-	testerBox.cursorIndex = testerBox.cursorIndex + 1                                                              --Increment the cursor index
+	testerBox.plainText   = table.concat{textBefore,key,textAfter}                                                 --Put the new string together; Update |Plain Text|
+	testerBox.cursorIndex = testerBox.cursorIndex + 1                                                              --Increment the |Cursor Index|
 	
-	testerBox.cursorX     = testerBox.font:getWidth(textWrapBefore[#textWrapBefore])                               --Set the wrap index to the legnth of the text behind the absolute index
-	
+	testerBox.cursorX     = testerBox.font:getWidth(textWrapBefore[#textWrapBefore])                               --Set the |Wrap Index| to the legnth of the text behind the absolute index
+	testerBox.cursorY     = math.max(#textWrapBefore,1) * testerBox.fontHeight
+	testerBox.cursorLine  = #textWrapBefore
 	testerBox:setText(testerBox.plainText,testerBox.wrap,testerBox.align)                                          --Set the text to the updated string
-	testerBox.blinkTimer = 0
+	testerBox.blinkTimer = 0                                                                                       --Prevent cursor from blinking
 	testerBox.showCursor = true
 	
 end
 
 function love.keypressed(key)
 	
-	if key == "return" then
-		local textBefore = string.utf8sub(testerBox.plainText, 1, testerBox.cursorIndex)                          --Get text before the current plain text index position
-		local textAfter  = string.utf8sub(testerBox.plainText, testerBox.cursorIndex+1,testerBox.plainText:len()) --Get text after the current plain text index position
+	if key == "return" then		
+		local textBefore = string.utf8sub(testerBox.plainText, 1, testerBox.cursorIndex)                          --Get text before the current |Plain Text Index| position
+		local textAfter  = string.utf8sub(testerBox.plainText, testerBox.cursorIndex+1,testerBox.plainText:len()) --Get text after the current |Plain Text Index| position
 		
-		testerBox.plainText       = table.concat{textBefore,'\n',textAfter}                                       --concatenate table of text, update the plain text
-		testerBox.cursorX         = 0                                                                             --Set cursor X to 0 when starting a newline
-		testerBox.cursorLine      = testerBox.cursorLine + 1                                                      --Increament cursor's line position
-		testerBox.cursorY         = testerBox.cursorY + testerBox.fontHeight                                      --Increament cursor's Y position by the font height
-		testerBox.cursorIndex     = testerBox.cursorIndex + 1                                                     --Increament cursor index for plain text (to account for the '\n' character)
-		testerBox.wrapIndex       = 0                                                                             --Rest cursor's wrapped index to 1 (to account for the '\n' character)
-		
+		testerBox.plainText       = table.concat{textBefore,'\n',textAfter}                                       --concatenate table of text, update the |Plain Text|
+		testerBox.cursorX         = 0                                                                             --Set |Cursor X| to 0 when starting a newline
+		testerBox.cursorLine      = testerBox.cursorLine + 1                                                      --Increament |Cursor's line| position
+		testerBox.cursorY         = testerBox.cursorY + testerBox.fontHeight                                      --Increament |Cursor's Y| position by the font height
+		testerBox.cursorIndex     = testerBox.cursorIndex + 1                                                     --Increament |Cursor Index| for |Plain Text| (to account for the '\n' character)
+		testerBox.wrapIndex       = 0                                                                             --Rest |Cursor's Wrapped Index| to 1 (to account for the '\n' character)
 	end
 	
 	
-	if key == "backspace" then
-		local textBefore        = string.utf8sub(testerBox.plainText, 1, testerBox.cursorIndex - 1)                         --Text before the index
+	if key == "backspace" and testerBox.cursorIndex > 0 then
+		local textBefore        = string.utf8sub(testerBox.plainText, 0, testerBox.cursorIndex - 1)                         --Text before the index
 		local textRem           = string.utf8sub(testerBox.plainText, testerBox.cursorIndex, testerBox.cursorIndex)         --Text removed at index
 		local textAfter         = string.utf8sub(testerBox.plainText, testerBox.cursorIndex + 1, testerBox.plainText:len()) --Text after the index
 		local _, textWrapBefore = testerBox.font:getWrap(textBefore,testerBox.wrap)                                         --The wrapping of the text before the index
 		testerBox.plainText     = table.concat{textBefore,textAfter}                                                        --Update the plainText string
-		--[[
-			**I S S U E S**
-			:: Cursor does not align with text when textBefor is empty
-			**T O D O S**
-			:: CursorY need to update with text
-		]]
-		if #textWrapBefore == 0 then                                                                --If no text is behind the index
-			testerBox.cursorIndex     = 0                                                           --Set the index equal to zero
-			testerBox.cursorWrapIndex = 0                                                           --Set the wrap index to zero as well
-			testerBox.cursorX         = 0
-		else                                                                                        --Elsewise
-			testerBox.cursorIndex     = testerBox.cursorIndex - 1                                   --Decreament the index
-			testerBox.cursorWrapIndex = textWrapBefore[#textWrapBefore]:len()                       --Set the wrap index to the legnth of the text behind the absolute index
-			testerBox.cursorX         = testerBox.font:getWidth(textWrapBefore[#textWrapBefore])    --Set the X position of the cursor to the pixel width of the text behind the absolute index
+		
+		if #textWrapBefore == 0 then            --If no text is behind the |Index|
+			testerBox.cursorIndex     = 0       --Set |The Index| equal to zero
+			testerBox.cursorWrapIndex = 0       --Set |The Wrap Index| to zero as well
+			testerBox.cursorX         = 0       --Set teh |Cursor X| 2 0 plz
+			if textRem == '\n' then
+				testerBox.cursorY     = testerBox.fontHeight      --Update the |Cursor Y| when a \n is removed
+				testerBox.cursorLine  = testerBox.cursorLine - 1  --Update the |Cursor Line|
+			end
+		else                                                                                     --Elsewise
+			testerBox.cursorIndex     = testerBox.cursorIndex - 1                                --Decreament |The Index|
+			testerBox.cursorWrapIndex = textWrapBefore[#textWrapBefore]:len()                    --Set |The Wrap Index| to the legnth of the text behind the absolute index
+			if textBefore:sub(-1,-1) ~= '\n' then
+				testerBox.cursorX     = testerBox.font:getWidth(textWrapBefore[#textWrapBefore]) --Set the |X| position of the cursor to the pixel width of the text behind the absolute index
+				testerBox.cursorLine  = #textWrapBefore                                          --Update |Cursor Line|
+				testerBox.cursorY     = math.max(#textWrapBefore,1) * testerBox.fontHeight       --Update the |Y| position
+			elseif textRem == '\n' then
+				testerBox.cursorLine  = testerBox.cursorLine - 1                                 --Update the |Cursor Y| when a \n is removed
+				testerBox.cursorY     = testerBox.cursorY - testerBox.fontHeight                 --Update the |Cursor Line|
+			else
+				testerBox.cursorX     = testerBox.cursorX - testerBox.font:getWidth(textRem)     --Update |Cursor X|
+				testerBox.cursorLine  = #textBefore                                              --Update the |Cursor Line|, _just in case_
+			end
 		end
 		
 		testerBox:setText(testerBox.plainText,testerBox.wrap,testerBox.align)
 		
 	end
 	
-	if key == "left" and testerBox.cursorIndex - 1 >= 0 then
+	
+	if key == "left" then  -- |Uses the same logic a backspace, but The Plain Text stays the same|
+		local textBefore   = string.utf8sub(testerBox.plainText, 0, testerBox.cursorIndex - 1)
+		local previousChar = string.utf8sub(testerBox.plainText, testerBox.cursorIndex, testerBox.cursorIndex)
 		
+		local _, textWrapBefore = testerBox.font:getWrap(textBefore,testerBox.wrap)
+		
+		if #textWrapBefore == 0 then
+			testerBox.cursorIndex     = 0
+			testerBox.cursorWrapIndex = 0
+			testerBox.cursorX         = 0
+			if previousChar == '\n' then
+				testerBox.cursorY     = 0
+				testerBox.cursorLine  = testerBox.cursorLine - 1 
+			end
+		else
+			testerBox.cursorIndex     = testerBox.cursorIndex - 1
+			testerBox.cursorWrapIndex = textWrapBefore[#textWrapBefore]:len()
+			if textBefore:sub(-1,-1) ~= '\n' then
+				testerBox.cursorX     = testerBox.font:getWidth(textWrapBefore[#textWrapBefore])
+				testerBox.cursorLine  = #textWrapBefore
+				testerBox.cursorY     = math.max(#textWrapBefore,1) * testerBox.fontHeight
+			elseif previousChar == '\n' then
+				testerBox.cursorLine  = testerBox.cursorLine - 1
+				testerBox.cursorY     = testerBox.cursorY - testerBox.fontHeight
+			else
+				testerBox.cursorX     = testerBox.cursorX - testerBox.font:getWidth(previousChar)
+				testerBox.cursorLine  = #textBefore
+			end
+		end		
 	end
 	
-	if key == "right" and testerBox.cursorIndex + 1 <= testerBox.plainText:len() then
+	--[[
+		**Text States**
+		
+		_State I:_   [ABCD] [E]|(F) (G)[HIJ], ... ======> Move right;  Cursor x += nextChar_width; Cursor index++;
+		_State II:_  [ABCD] [E]|(H) (\n), [...] ========> Move cursor(X,Y) to start of next line; Cursor_Index++; Cursor_Line++;
+		_State III:_ [ABCDEFGH] [I]|(J) (nil), [...] ===> Same as State II;
+		State IV:  [ABCDEFGHI] [J]|(nil) (nil) ========> Do nothing;
+		
+	]]
+	
+	if key == "right" then
+		local textBefore   = string.utf8sub(testerBox.plainText, 0, testerBox.cursorIndex)                      --The text before includes the character directly after the cursor here.
+		local previousChar = string.utf8sub(testerBox.plainText, testerBox.cursorIndex, testerBox.cursorIndex)
+		
 		
 	end
 	
