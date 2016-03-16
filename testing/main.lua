@@ -116,10 +116,10 @@ function love.load()
 		self.cursorX     = self.font:getWidth(textWrapBefore[#textWrapBefore])                           --Set the |Wrap Index| to the legnth of the text behind the absolute index
 		self.cursorY     = math.max(#textWrapBefore,1) * self.fontHeight
 		self.cursorLine  = #textWrapBefore
+		
 		self:setText(self.plainText,self.wrap,self.align)                                                --Set the text to the updated string
 		self.blinkTimer = 0                                                                              --Prevent cursor from blinking
 		self.showCursor = true
-		
 	end
 	
 	textBox.meta.onReturn = function(self, key)
@@ -264,6 +264,17 @@ function love.keypressed(key)
 	if key == "right" then
 		local textBefore   = string.utf8sub(testerBox.plainText, 0, testerBox.cursorIndex)                      --The text before includes the character directly after the cursor here.
 		local previousChar = string.utf8sub(testerBox.plainText, testerBox.cursorIndex, testerBox.cursorIndex)
+		local _, wrappedTextBefor = testerBox.font:getWrap(testerBox.plainText)
+		
+		
+		
+	end
+	
+	if key == "up" then
+		
+	end
+	
+	if key == "down" then
 		
 	end
 	
