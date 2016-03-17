@@ -44,12 +44,12 @@ function love.load()
 			tb.drawnText   = love.graphics.newText(tb.font)
 			tb.drawnText:addf(tb.plainText, tb.wrap, tb.align,0,0)
 			
-			tb.cursorIndex     = tb.plainText:len()                       --Where we are in the full string of plain text
-			tb.cursorWrapIndex = #wraps == 0 and 0 or wraps[#wraps]:len() --Where we are in the current line of wrapped text
-			tb.cursorLine      = 0                                        --Current of wrapped text
+			tb.trueIndex = tb.plainText:len()                       --Where we are in the full string of plain text
+			tb.wrapIndex = #wraps == 0 and 0 or wraps[#wraps]:len() --Where we are in the current line of wrapped text
+			tb.line      = 1                                        --Current of wrapped text
 			
 			tb.cursorX         = tb.font:getWrap(tb.plainText, tb.wrap)
-			tb.cursorY         = tb.fontHeight * math.max(tb.cursorLine,1)
+			tb.cursorY         = tb.fontHeight * math.max(tb.line,1)
 			
 			tb.showCursor      = true
 			tb.blinkDelay      = 0.5
@@ -105,14 +105,77 @@ function love.load()
 		love.graphics.setLineStyle("rough")
 	end
 	
-	textBox.meta.onTextInput = function(self, key, code)
+	textBox.meta.moveIndexHorizontal = function(self, dir, key)
+		local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
 		
+		
+		print("Hello: ", self.trueIndex,self.plainText:len())
+		if self.trueIndex + dir <= self.plainText:len() and self.trueIndex + dir >= 0 then
+			if dir < 0 then --Left logic
+				
+				if self.wrapIndex + dir < 0 then
+					
+					self.line      = self.line - 1
+					local chars   = (textWrap[self.line] or ""):len()
+					self.wrapIndex = chars - 1
+					self.trueIndex = self.trueIndex - 1
+					
+				else
+					
+					self.wrapIndex = self.wrapIndex - 1
+					self.trueIndex = self.trueIndex - 1
+					
+				end
+				
+			elseif dir > 0 then --Right logic
+				
+				if self.wrapIndex + dir > (textWrap[self.line] or ""):len() then
+					
+					self.wrapIndex = key and 1 or 0
+					self.trueIndex = self.trueIndex + 1
+					self.line      = self.line + 1
+					
+				else
+					if self.wrapIndex == (textWrap[self.line] or ""):len() then
+						
+					end
+					self.wrapIndex = self.wrapIndex + 1
+					self.trueIndex = self.trueIndex + 1
+					
+				end
+				
+			end
+		end
+		self:updateCursor()
+	end
+	
+	textBox.meta.moveVerticalIndex = function(self, dir)
+		local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
+		
+		--if self.wrapIndex
+		
+		
+	end
+	
+	textBox.meta.updateCursor = function(self)
+		local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
+		self.cursorX = self.font:getWidth(string.utf8sub( textWrap[self.line] or "", 0, self.wrapIndex))
+		self.cursorY = self.line * self.fontHeight
+	end
+	
+	textBox.meta.onTextInput = function(self, key, code)
+		local textBefore  = string.utf8sub(self.plainText, 0, self.trueIndex)
+		local textAfter   = string.utf8sub(self.plainText, self.trueIndex+1, -1)
+		self.plainText     = table.concat{textBefore, key, textAfter}
+		print(self.plainText:len())
+		self:moveIndexHorizontal(1, key)
+		self:setText(self.plainText,self.wrap,self.align)
+		--[[
 		local textBefore      = string.utf8sub(self.plainText, 1, self.cursorIndex)                      --Get the text behind the index
 		local textAfter       = string.utf8sub(self.plainText, self.cursorIndex+1, self.plainText:len()) --Get the text after the index
 		local _, textWrapBefore = self.font:getWrap(textBefore..key,self.wrap)                           --Get the wrapping of the text behind the index
 		self.plainText   = table.concat{textBefore,key,textAfter}                                        --Put the new string together; Update |Plain Text|
 		self.cursorIndex = self.cursorIndex + 1                                                          --Increment the |Cursor Index|
-	
 		self.cursorX     = self.font:getWidth(textWrapBefore[#textWrapBefore])                           --Set the |Wrap Index| to the legnth of the text behind the absolute index
 		self.cursorY     = math.max(#textWrapBefore,1) * self.fontHeight
 		self.cursorLine  = #textWrapBefore
@@ -120,6 +183,7 @@ function love.load()
 		self:setText(self.plainText,self.wrap,self.align)                                                --Set the text to the updated string
 		self.blinkTimer = 0                                                                              --Prevent cursor from blinking
 		self.showCursor = true
+		--]]
 	end
 	
 	textBox.meta.onReturn = function(self, key)
@@ -136,70 +200,27 @@ function love.load()
 	end
 	
 	textBox.meta.onBackspace = function(self, key)
-		local textBefore        = string.utf8sub(self.plainText, 0, self.cursorIndex - 1)                    --Text before the index
-		local textRem           = string.utf8sub(self.plainText, self.cursorIndex, self.cursorIndex)         --Text removed at index
-		local textAfter         = string.utf8sub(self.plainText, self.cursorIndex + 1, self.plainText:len()) --Text after the index
-		local _, textWrapBefore = self.font:getWrap(textBefore,self.wrap)                                    --The wrapping of the text before the index
+		local textBefore        = string.utf8sub(self.plainText, 0, self.trueIndex - 1)                    --Text before the index
+		local textRem           = string.utf8sub(self.plainText, self.trueIndex, self.trueIndex)         --Text removed at index
+		local textAfter         = string.utf8sub(self.plainText, self.trueIndex + 1, self.plainText:len()) --Text after the index
+		self.plainText     = textBefore
+		self:moveIndexHorizontal(-1)
 		self.plainText     = table.concat{textBefore,textAfter}                                              --Update the plainText string
 		
-		if #textWrapBefore == 0 then            --If no text is behind the |Index|
-			self.cursorIndex     = 0       --Set |The Index| equal to zero
-			self.cursorWrapIndex = 0       --Set |The Wrap Index| to zero as well
-			self.cursorX         = 0       --Set teh |Cursor X| 2 0 plz
-			if textRem == '\n' then
-				self.cursorY     = self.fontHeight      --Update the |Cursor Y| when a \n is removed
-				self.cursorLine  = self.cursorLine - 1  --Update the |Cursor Line|
-			end
-		else                                                                           --Elsewise
-			self.cursorIndex     = self.cursorIndex - 1                                --Decreament |The Index|
-			self.cursorWrapIndex = textWrapBefore[#textWrapBefore]:len()               --Set |The Wrap Index| to the legnth of the text behind the absolute index
-			if textBefore:sub(-1,-1) ~= '\n' then
-				self.cursorX     = self.font:getWidth(textWrapBefore[#textWrapBefore]) --Set the |X| position of the cursor to the pixel width of the text behind the absolute index
-				self.cursorLine  = #textWrapBefore                                     --Update |Cursor Line|
-				self.cursorY     = math.max(#textWrapBefore,1) * self.fontHeight       --Update the |Y| position
-			elseif textRem == '\n' then
-				self.cursorLine  = self.cursorLine - 1                                 --Update the |Cursor Y| when a \n is removed
-				self.cursorY     = self.cursorY - self.fontHeight                      --Update the |Cursor Line|
-			else
-				self.cursorX     = self.cursorX - self.font:getWidth(textRem)          --Update |Cursor X|
-				self.cursorLine  = #textBefore                                         --Update the |Cursor Line|, _just in case_
-			end
-		end
+		
+		
+		
 		
 		self:setText(self.plainText,self.wrap,self.align)
 	end
 	
 	textBox.meta.onLeft = function(self, key) -- |Uses the same logic a backspace, but The Plain Text stays the same|
-		local textBefore   = string.utf8sub(self.plainText, 0, self.cursorIndex - 1)
-		local previousChar = string.utf8sub(self.plainText, self.cursorIndex, self.cursorIndex)
-		
-		local _, textWrapBefore = self.font:getWrap(textBefore,self.wrap)
-		
-		if #textWrapBefore == 0 then
-			self.cursorIndex     = 0
-			self.cursorWrapIndex = 0
-			self.cursorX         = 0
-			if previousChar == '\n' then
-				self.cursorY     = 0
-				self.cursorLine  = self.cursorLine - 1 
-			end
-		else
-			self.cursorIndex     = self.cursorIndex - 1
-			self.cursorWrapIndex = textWrapBefore[#textWrapBefore]:len()
-			if textBefore:sub(-1,-1) ~= '\n' then
-				self.cursorX     = self.font:getWidth(textWrapBefore[#textWrapBefore])
-				self.cursorLine  = #textWrapBefore
-				self.cursorY     = math.max(#textWrapBefore,1) * self.fontHeight
-			elseif previousChar == '\n' then
-				self.cursorLine  = self.cursorLine - 1
-				self.cursorY     = self.cursorY - self.fontHeight
-			else
-				self.cursorX     = self.cursorX - self.font:getWidth(previousChar)
-				self.cursorLine  = #textBefore
-			end
-		end	
+		self:moveIndexHorizontal(-1)
 	end
 	
+	textBox.meta.onRight = function(self, key)
+		self:moveIndexHorizontal(1)
+	end
 	testerBox = textBox:new("", 100, 100)
 	
 	font = love.graphics.getFont()
@@ -230,6 +251,8 @@ end
 function love.update(dt)
 	testerBox:update(dt)
 	--print(testerBox.cursorWrapIndex)
+	local out = string.gsub(testerBox.plainText,'\n','~')
+	print(string.utf8sub(out, 0, testerBox.trueIndex).."|"..string.utf8sub(out,testerBox.trueIndex + 1, -1))
 end
 
 
@@ -243,7 +266,7 @@ function love.keypressed(key)
 		testerBox:onReturn(key)
 	end
 	
-	if key == "backspace" and testerBox.cursorIndex > 0 then
+	if key == "backspace" and testerBox.trueIndex > 0 then
 		testerBox:onBackspace(key)
 	end
 	
@@ -261,12 +284,9 @@ function love.keypressed(key)
 		
 	]]
 	
-	if key == "right" then
-		local textBefore   = string.utf8sub(testerBox.plainText, 0, testerBox.cursorIndex)                      --The text before includes the character directly after the cursor here.
-		local previousChar = string.utf8sub(testerBox.plainText, testerBox.cursorIndex, testerBox.cursorIndex)
-		local _, wrappedTextBefor = testerBox.font:getWrap(testerBox.plainText)
+	if key == "right" then		
 		
-		
+		testerBox:onRight(key)
 		
 	end
 	
@@ -280,7 +300,8 @@ function love.keypressed(key)
 	
 	testerBox.blinkTimer = 0
 	testerBox.showCursor = true
-	print(string.gsub(testerBox.plainText,'\n','\\n'))
+	
+	
 end
 
 function love.mousereleased(x, y, button) 
