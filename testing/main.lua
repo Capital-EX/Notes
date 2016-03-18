@@ -124,12 +124,12 @@ function love.load()
 				end
 				
 			elseif dir > 0 then --Right logic
-				self.trueIndex = self.trueIndex + dir
 				local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
-				local textBehind = string.utf8sub(self.plainText, 0, self.trueIndex - 1)
-				local _, wrapBehind = self.font:getWrap(textBehind,self.wrap)
+				local nextChar    = string.utf8sub(self.plainText,self.trueIndex + 1, self.trueIndex + 1)
+				local lineLength  = 
+				if self.wrapIndx == textWrap[self.line] then
 				
-				
+				end
 				
 			end
 		end
