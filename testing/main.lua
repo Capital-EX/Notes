@@ -1,9 +1,9 @@
 --[[
 #	Text area todo
-	Make Movement System    [33%]
+	Make Movement System    [50%]
 	|:::Backspacing             [X]
 	|:::Left Movement           [X]
-	|:::Right Movement          [ ]
+	|:::Right Movement          [X]
 	|:::Upward Movement         [ ]
 	|:::Downward Movement       [ ]
 	|:::Free-form Movement      [ ]
@@ -30,7 +30,7 @@ function love.load()
 			tb.font        = font or love.graphics.getFont()
 			tb.fontHeight  = tb.font:getHeight()
 			
-			tb.wrap        =  wrap or tb.font:getWidth("m") * 10          --Defaults to 10 em of space
+			tb.wrap        =  wrap or tb.font:getWidth("m") * 5          --Defaults to 10 em of space
 			tb.align       = align or "left"
 			tb.padding     = {
 				top    = 0,
@@ -106,70 +106,60 @@ function love.load()
 	end
 	
 	textBox.meta.moveIndexHorizontal = function(self, dir, key)
-		local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
-		
 		
 		print("Hello: ", self.trueIndex,self.plainText:len())
 		if self.trueIndex + dir <= self.plainText:len() and self.trueIndex + dir >= 0 then
+			local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
+			local textBehind = string.utf8sub(self.plainText, 0, self.trueIndex - 1)
+			local _, wrapBehind = self.font:getWrap(textBehind,self.wrap)
 			if dir < 0 then --Left logic
-				
+				print(self.wrapIndex)
 				if self.wrapIndex + dir < 0 then
-					
 					self.line      = self.line - 1
-					local chars   = (textWrap[self.line] or ""):len()
-					self.wrapIndex = chars - 1
+					self.wrapIndex = (wrapBehind[self.line] or ""):len()
 					self.trueIndex = self.trueIndex - 1
-					
 				else
-					
-					self.wrapIndex = self.wrapIndex - 1
-					self.trueIndex = self.trueIndex - 1
-					
+					self.wrapIndex = self.wrapIndex + dir
+					self.trueIndex = self.trueIndex + dir
 				end
 				
 			elseif dir > 0 then --Right logic
+				self.trueIndex = self.trueIndex + dir
+				local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
+				local textBehind = string.utf8sub(self.plainText, 0, self.trueIndex - 1)
+				local _, wrapBehind = self.font:getWrap(textBehind,self.wrap)
 				
-				if self.wrapIndex + dir > (textWrap[self.line] or ""):len() then
-					
-					self.wrapIndex = key and 1 or 0
-					self.trueIndex = self.trueIndex + 1
-					self.line      = self.line + 1
-					
-				else
-					if self.wrapIndex == (textWrap[self.line] or ""):len() then
-						
-					end
-					self.wrapIndex = self.wrapIndex + 1
-					self.trueIndex = self.trueIndex + 1
-					
-				end
+				
 				
 			end
 		end
 		self:updateCursor()
 	end
 	
-	textBox.meta.moveVerticalIndex = function(self, dir)
-		local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
-		
-		--if self.wrapIndex
-		
-		
+	textBox.meta.addText = function(self, text)
+		local textBefore  = string.utf8sub(self.plainText, 0, self.trueIndex)
+		local textAfter   = string.utf8sub(self.plainText, self.trueIndex+1, -1)
+		local blah, wrapBefore = self.font:getWrap(textBefore..text,self.wrap)
+		self.plainText    = table.concat{textBefore, text, textAfter}
+		self.trueIndex    = self.trueIndex + 1
+		self.line         = math.max(#wrapBefore, 1)
+		self.wrapIndex    = math.min(self.wrapIndex + 1, wrapBefore[self.line]:len())
+		self:setText(self.plainText,self.wrap, self.align)
+		self:updateCursor()
 	end
+	
+	testerBox.meta.remove = function(self,
 	
 	textBox.meta.updateCursor = function(self)
 		local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
-		self.cursorX = self.font:getWidth(string.utf8sub( textWrap[self.line] or "", 0, self.wrapIndex))
+		self.cursorX = self.font:getWidth(string.utf8sub(textWrap[self.line] or "", 0, self.wrapIndex))
+		print(string.utf8sub(textWrap[self.line] or "", 0, self.wrapIndex))
 		self.cursorY = self.line * self.fontHeight
 	end
 	
 	textBox.meta.onTextInput = function(self, key, code)
-		local textBefore  = string.utf8sub(self.plainText, 0, self.trueIndex)
-		local textAfter   = string.utf8sub(self.plainText, self.trueIndex+1, -1)
-		self.plainText     = table.concat{textBefore, key, textAfter}
-		print(self.plainText:len())
-		self:moveIndexHorizontal(1, key)
-		self:setText(self.plainText,self.wrap,self.align)
+		self:addText(key)
+		--print(self.plainText:len())
 		--[[
 		local textBefore      = string.utf8sub(self.plainText, 1, self.cursorIndex)                      --Get the text behind the index
 		local textAfter       = string.utf8sub(self.plainText, self.cursorIndex+1, self.plainText:len()) --Get the text after the index
@@ -187,15 +177,14 @@ function love.load()
 	end
 	
 	textBox.meta.onReturn = function(self, key)
-		local textBefore = string.utf8sub(self.plainText, 1, self.cursorIndex)                     --Get text before the current |Plain Text Index| position
-		local textAfter  = string.utf8sub(self.plainText, self.cursorIndex+1,self.plainText:len()) --Get text after the current |Plain Text Index| position
+		local textBefore = string.utf8sub(self.plainText, 1, self.trueIndex)                     --Get text before the current |Plain Text Index| position
+		local textAfter  = string.utf8sub(self.plainText, self.trueIndex+1,self.plainText:len()) --Get text after the current |Plain Text Index| position
 		
-		self.plainText       = table.concat{textBefore,'\n',textAfter}                             --concatenate table of text, update the |Plain Text|
-		self.cursorX         = 0                                                                   --Set |Cursor X| to 0 when starting a newline
-		self.cursorLine      = self.cursorLine + 1                                                 --Increament |Cursor's line| position
-		self.cursorY         = self.cursorY + self.fontHeight                                      --Increament |Cursor's Y| position by the font height
-		self.cursorIndex     = self.cursorIndex + 1                                                --Increament |Cursor Index| for |Plain Text| (to account for the '\n' character)
-		self.wrapIndex       = 0                                                                   --Rest |Cursor's Wrapped Index| to 1 (to account for the '\n' character)		
+		self.plainText   = table.concat{textBefore,'\n',textAfter}                             --concatenate table of text, update the |Plain Text|
+		self.line        = self.line + 1                                                 --Increament |Cursor's line| position
+		self.trueIndex   = self.trueIndex + 1                                                --Increament |Cursor Index| for |Plain Text| (to account for the '\n' character)
+		self.wrapIndex   = 0                                                                   --Rest |Cursor's Wrapped Index| to 1 (to account for the '\n' character)		
+		self:updateCursor()
 		self:setText(self.plainText,self.wrap,self.align)
 	end
 	
@@ -203,11 +192,8 @@ function love.load()
 		local textBefore        = string.utf8sub(self.plainText, 0, self.trueIndex - 1)                    --Text before the index
 		local textRem           = string.utf8sub(self.plainText, self.trueIndex, self.trueIndex)         --Text removed at index
 		local textAfter         = string.utf8sub(self.plainText, self.trueIndex + 1, self.plainText:len()) --Text after the index
-		self.plainText     = textBefore
-		self:moveIndexHorizontal(-1)
 		self.plainText     = table.concat{textBefore,textAfter}                                              --Update the plainText string
-		
-		
+		self:moveIndexHorizontal(-1)
 		
 		
 		
@@ -246,13 +232,18 @@ function love.draw()
 	love.graphics.line(cursorPos, formatedText:getHeight() - fontHeight, cursorPos, fontHeight*cursorLine)
 	love.graphics.setLineStyle("rough")
 	]]
+	str = "("..testerBox.trueIndex..", "..testerBox.wrapIndex..", "..testerBox.line..")"
+	love.graphics.print(str,0,100)
 end
 
 function love.update(dt)
 	testerBox:update(dt)
-	--print(testerBox.cursorWrapIndex)
-	local out = string.gsub(testerBox.plainText,'\n','~')
-	print(string.utf8sub(out, 0, testerBox.trueIndex).."|"..string.utf8sub(out,testerBox.trueIndex + 1, -1))
+	local out = testerBox.plainText:gsub('\n','~'):gsub(' ', '_')
+	local _, wrap = testerBox.font:getWrap(testerBox.plainText, testerBox.wrap)
+	--print("____________________")
+	--print(testerBox.line,testerBox.wrapIndex)
+	--print((wrap[testerBox.line] or "-\\_(o_o)_/-"):gsub('\n','~'):gsub(' ', '_'))
+	--print(string.utf8sub(out, 0, testerBox.trueIndex).."|"..string.utf8sub(out,testerBox.trueIndex + 1, -1))
 end
 
 
@@ -274,16 +265,6 @@ function love.keypressed(key)
 		testerBox:onLeft(key)
 	end
 	
-	--[[
-#		Text States
-		
-		_State I:_   [ABCD] [E]|(F) (G)[HIJ], ... ======> Move right;  Cursor x += nextChar_width; Cursor index++;
-		_State II:_  [ABCD] [E]|(H) (\n), [...] ========> Move cursor(X,Y) to start of next line; Cursor_Index++; Cursor_Line++;
-		_State III:_ [ABCDEFGH] [I]|(J) (nil), [...] ===> Same as State II;
-		State IV:  [ABCDEFGHI] [J]|(nil) (nil) ========> Do nothing;
-		
-	]]
-	
 	if key == "right" then		
 		
 		testerBox:onRight(key)
@@ -299,9 +280,7 @@ function love.keypressed(key)
 	end
 	
 	testerBox.blinkTimer = 0
-	testerBox.showCursor = true
-	
-	
+	testerBox.showCursor = true	
 end
 
 function love.mousereleased(x, y, button) 
