@@ -19,7 +19,10 @@ require("./utf8")
 
 
 function love.load()
-	
+	local roundToInt = function(n)
+		return n > 0 and math.floor(n+0.5) or math.ceil(n-0.5)
+	end
+
 	textBox = {
 		new = function(self, text, x, y, wrap, align, font) 
 			local tb       = {}
@@ -105,8 +108,7 @@ function love.load()
 		love.graphics.setLineStyle("rough")
 	end
 	
-	textBox.meta.moveIndexHorizontal = function(self, dir, key)
-		
+	textBox.meta.moveIndexHorizontal = function(self, dir, isDel)
 		print("Hello: ", self.trueIndex,self.plainText:len())
 		if self.trueIndex + dir <= self.plainText:len() and self.trueIndex + dir >= 0 then
 			local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
@@ -114,21 +116,38 @@ function love.load()
 			local _, wrapBehind = self.font:getWrap(textBehind,self.wrap)
 			if dir < 0 then --Left logic
 				print(self.wrapIndex)
-				if self.wrapIndex + dir < 0 then
+				self.trueIndex = self.trueIndex - 1
+				print(self.wrapIndex + dir == 0 and isDel and self.trueIndex + dir ~= 0,self.trueIndex + dir )
+				if (self.wrapIndex + dir < 0 and self.trueIndex) or (self.wrapIndex + dir == 0 and isDel and self.trueIndex ~= 0) then
 					self.line      = self.line - 1
 					self.wrapIndex = (wrapBehind[self.line] or ""):len()
-					self.trueIndex = self.trueIndex - 1
 				else
 					self.wrapIndex = self.wrapIndex + dir
-					self.trueIndex = self.trueIndex + dir
 				end
 				
 			elseif dir > 0 then --Right logic
-				local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
-				local nextChar    = string.utf8sub(self.plainText,self.trueIndex + 1, self.trueIndex + 1)
-				local lineLength  = 
-				if self.wrapIndx == textWrap[self.line] then
 				
+				local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
+				local currentLine = textWrap[self.line] or ""
+				--Grade A variable naming
+				local nextCharTA, nextCharTB         = string.utf8sub(self.plainText, self.trueIndex + 1, self.trueIndex + 1) ,string.utf8sub(self.plainText, self.trueIndex + 2, self.trueIndex + 2)
+				local nextCharWA, nextCharWB         = string.utf8sub(currentLine, self.wrapIndex + 1, self.wrapIndex + 1), string.utf8sub(currentLine, self.wrapIndex + 2, self.wrapIndex + 2)
+				
+				--print(nextChars[1]:gsub('\n','~'):gsub(' ', '_'),nextChars[2]:gsub('\n','~'):gsub(' ', '_'))
+				print(nextCharTA:gsub('\n','~'):gsub(' ', '_'), nextCharTB:gsub('\n','~'):gsub(' ', '_'), nextCharWA, nextCharWB)
+				if nextCharTA == '\n' then
+					self.wrapIndex = 0
+					self.trueIndex = self.trueIndex + 1
+					self.line      = self.line + 1					
+				elseif nextCharTA ~= "" then
+					if nextCharWB == "" and textWrap[self.line+1] and nextCharTB ~= "\n" then
+						self.wrapIndex = 0
+						self.trueIndex = self.trueIndex + 1
+						self.line      = self.line + 1
+					else
+						self.wrapIndex = self.wrapIndex + 1
+						self.trueIndex = self.trueIndex + 1
+					end
 				end
 				
 			end
@@ -136,50 +155,57 @@ function love.load()
 		self:updateCursor()
 	end
 	
-	textBox.meta.addText = function(self, text)
+	textBox.meta.moveIndexVertical  = function(self, dir)
+		local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
+		local line = textWrap[self.line + dir] or ""
+		local setIndex = roundToInt(line:len()*self.cursorX/self.font:getWidth(line))
+		if dir < 0 then
+			print(setIndex)
+		elseif dir > 0 then
+			print(setIndex)
+		end
+	end
+	
+	textBox.meta.addText  = function(self, text)
 		local textBefore  = string.utf8sub(self.plainText, 0, self.trueIndex)
 		local textAfter   = string.utf8sub(self.plainText, self.trueIndex+1, -1)
-		local blah, wrapBefore = self.font:getWrap(textBefore..text,self.wrap)
+		--local adjust      = 0
+		
 		self.plainText    = table.concat{textBefore, text, textAfter}
+		local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
+		print(textWrap[self.line])
 		self.trueIndex    = self.trueIndex + 1
-		self.line         = math.max(#wrapBefore, 1)
-		self.wrapIndex    = math.min(self.wrapIndex + 1, wrapBefore[self.line]:len())
-		self:setText(self.plainText,self.wrap, self.align)
+		self.wrapIndex    = self.wrapIndex + 1
+		
+		if self.wrapIndex > textWrap[self.line]:len() then
+			
+			self.line      = math.max(#textWrap, 1)
+			self.wrapIndex = 1
+			
+		end
+		self:setText(self.plainText,self.wrapIndex, self.align)
 		self:updateCursor()
 	end
 	
-	testerBox.meta.remove = function(self,
+	--testerBox.meta.remove = function(self,
 	
 	textBox.meta.updateCursor = function(self)
 		local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
 		self.cursorX = self.font:getWidth(string.utf8sub(textWrap[self.line] or "", 0, self.wrapIndex))
-		print(string.utf8sub(textWrap[self.line] or "", 0, self.wrapIndex))
+		--[[
+		out = textWrap[self.line] == "" and "@" or (textWrap[self.line] or "@")
+		print(string.utf8sub(out:gsub('\n','~'):gsub(' ', '_'), 0, self.wrapIndex))
+		--]]
 		self.cursorY = self.line * self.fontHeight
 	end
 	
 	textBox.meta.onTextInput = function(self, key, code)
 		self:addText(key)
-		--print(self.plainText:len())
-		--[[
-		local textBefore      = string.utf8sub(self.plainText, 1, self.cursorIndex)                      --Get the text behind the index
-		local textAfter       = string.utf8sub(self.plainText, self.cursorIndex+1, self.plainText:len()) --Get the text after the index
-		local _, textWrapBefore = self.font:getWrap(textBefore..key,self.wrap)                           --Get the wrapping of the text behind the index
-		self.plainText   = table.concat{textBefore,key,textAfter}                                        --Put the new string together; Update |Plain Text|
-		self.cursorIndex = self.cursorIndex + 1                                                          --Increment the |Cursor Index|
-		self.cursorX     = self.font:getWidth(textWrapBefore[#textWrapBefore])                           --Set the |Wrap Index| to the legnth of the text behind the absolute index
-		self.cursorY     = math.max(#textWrapBefore,1) * self.fontHeight
-		self.cursorLine  = #textWrapBefore
-		
-		self:setText(self.plainText,self.wrap,self.align)                                                --Set the text to the updated string
-		self.blinkTimer = 0                                                                              --Prevent cursor from blinking
-		self.showCursor = true
-		--]]
 	end
 	
 	textBox.meta.onReturn = function(self, key)
 		local textBefore = string.utf8sub(self.plainText, 1, self.trueIndex)                     --Get text before the current |Plain Text Index| position
 		local textAfter  = string.utf8sub(self.plainText, self.trueIndex+1,self.plainText:len()) --Get text after the current |Plain Text Index| position
-		
 		self.plainText   = table.concat{textBefore,'\n',textAfter}                             --concatenate table of text, update the |Plain Text|
 		self.line        = self.line + 1                                                 --Increament |Cursor's line| position
 		self.trueIndex   = self.trueIndex + 1                                                --Increament |Cursor Index| for |Plain Text| (to account for the '\n' character)
@@ -193,10 +219,7 @@ function love.load()
 		local textRem           = string.utf8sub(self.plainText, self.trueIndex, self.trueIndex)         --Text removed at index
 		local textAfter         = string.utf8sub(self.plainText, self.trueIndex + 1, self.plainText:len()) --Text after the index
 		self.plainText     = table.concat{textBefore,textAfter}                                              --Update the plainText string
-		self:moveIndexHorizontal(-1)
-		
-		
-		
+		self:moveIndexHorizontal(-1,true)
 		self:setText(self.plainText,self.wrap,self.align)
 	end
 	
@@ -225,13 +248,6 @@ end
 
 function love.draw()
 	testerBox:draw()
-	--[[
-	love.graphics.draw(formatedText)
-	love.graphics.setLineStyle("rough")
-	love.graphics.setLineWidth(2)
-	love.graphics.line(cursorPos, formatedText:getHeight() - fontHeight, cursorPos, fontHeight*cursorLine)
-	love.graphics.setLineStyle("rough")
-	]]
 	str = "("..testerBox.trueIndex..", "..testerBox.wrapIndex..", "..testerBox.line..")"
 	love.graphics.print(str,0,100)
 end
@@ -240,10 +256,12 @@ function love.update(dt)
 	testerBox:update(dt)
 	local out = testerBox.plainText:gsub('\n','~'):gsub(' ', '_')
 	local _, wrap = testerBox.font:getWrap(testerBox.plainText, testerBox.wrap)
-	--print("____________________")
-	--print(testerBox.line,testerBox.wrapIndex)
-	--print((wrap[testerBox.line] or "-\\_(o_o)_/-"):gsub('\n','~'):gsub(' ', '_'))
-	--print(string.utf8sub(out, 0, testerBox.trueIndex).."|"..string.utf8sub(out,testerBox.trueIndex + 1, -1))
+	--[[
+	print("____________________")
+	print(testerBox.line,testerBox.wrapIndex)
+	print((wrap[testerBox.line] or "-\\_(o_o)_/-"):gsub('\n','~'):gsub(' ', '_'))
+	print(string.utf8sub(out, 0, testerBox.trueIndex).."|"..string.utf8sub(out,testerBox.trueIndex + 1, -1))
+	--]]
 end
 
 
@@ -272,11 +290,11 @@ function love.keypressed(key)
 	end
 	
 	if key == "up" then
-		
+		testerBox:moveIndexVertical(-1)
 	end
 	
 	if key == "down" then
-		
+		testerBox:moveIndexVertical(1)
 	end
 	
 	testerBox.blinkTimer = 0
