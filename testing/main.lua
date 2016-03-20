@@ -1,10 +1,10 @@
 --[[
 #	Text area todo
-	Make Movement System    [66%]
+	Make Movement System    [83%]
 	|:::Backspacing             [X]
 	|:::Left Movement           [X]
 	|:::Right Movement          [X]
-	|:::Upward Movement         [ ]
+	|:::Upward Movement         [X]
 	|:::Downward Movement       [X]
 	|:::Free-form Movement      [ ]
 	
@@ -33,7 +33,7 @@ function love.load()
 			tb.font        = font or love.graphics.getFont()
 			tb.fontHeight  = tb.font:getHeight()
 			
-			tb.wrap        =  wrap or tb.font:getWidth("m") * 5          --Defaults to 10 em of space
+			tb.wrap        =  wrap or tb.font:getWidth("m") * 5   --Defaults to 5 em of space
 			tb.align       = align or "left"
 			tb.padding     = {
 				top    = 0,
@@ -47,9 +47,10 @@ function love.load()
 			tb.drawnText   = love.graphics.newText(tb.font)
 			tb.drawnText:addf(tb.plainText, tb.wrap, tb.align,0,0)
 			
-			tb.trueIndex = tb.plainText:len()                       --Where we are in the full string of plain text
-			tb.wrapIndex = #wraps == 0 and 0 or wraps[#wraps]:len() --Where we are in the current line of wrapped text
-			tb.line      = 1                                        --Current of wrapped text
+			tb.trueIndex   = tb.plainText:len()                       --Where we are in the full string of plain text
+			tb.wrapIndex   = #wraps == 0 and 0 or wraps[#wraps]:len() --Where we are in the current line of wrapped text
+			tb.line        = 1
+			--tb.trueLine    
 			
 			tb.cursorX         = tb.font:getWrap(tb.plainText, tb.wrap)
 			tb.cursorY         = tb.fontHeight * math.max(tb.line,1)
@@ -108,53 +109,61 @@ function love.load()
 		love.graphics.setLineStyle("rough")
 	end
 	
-	
-		textBox.meta.moveIndexLeft = function(self, isBS)
-		if self.trueIndex - 1 >= 0 then
+	textBox.meta.moveIndexLeft = function(self, isBS)
+		if self.trueIndex - 1 < 0 then return end
 			local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
 			local textBehind = string.utf8sub(self.plainText, 0, self.trueIndex - 1)
 			local _, wrapBehind = self.font:getWrap(textBehind,self.wrap)
-			--print(self.wrapIndex)
 			self.trueIndex = self.trueIndex - 1
-			--print(self.wrapIndex + dir == 0 and isDel and self.trueIndex + dir ~= 0,self.trueIndex + dir )
 			if (self.wrapIndex - 1 < 0 and self.trueIndex) or (self.wrapIndex - 1 == 0 and isBS and self.trueIndex ~= 0) then
 				self.line      = self.line - 1
 				self.wrapIndex = (wrapBehind[self.line] or ""):len()
 			else
 				self.wrapIndex = self.wrapIndex - 1
 			end
-		end
 		self:updateCursor()
 	end
 	
 	textBox.meta.moveIndexRight = function(self)
-		if self.trueIndex + 1 <= self.plainText:len() then
-			local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
-			local currentLine = textWrap[self.line] or ""
-			--Grade A variable naming
-			local nextCharTA, nextCharTB         = string.utf8sub(self.plainText, self.trueIndex + 1, self.trueIndex + 1) ,string.utf8sub(self.plainText, self.trueIndex + 2, self.trueIndex + 2)
-			local nextCharWA, nextCharWB         = string.utf8sub(currentLine, self.wrapIndex + 1, self.wrapIndex + 1), string.utf8sub(currentLine, self.wrapIndex + 2, self.wrapIndex + 2)
-			
-			--print(nextChars[1]:gsub('\n','~'):gsub(' ', '_'),nextChars[2]:gsub('\n','~'):gsub(' ', '_'))
-			print(nextCharTA:gsub('\n','~'):gsub(' ', '_'), nextCharTB:gsub('\n','~'):gsub(' ', '_'), nextCharWA, nextCharWB)
-			if nextCharTA == '\n' then
-				self.wrapIndex = 0
+		
+		if self.trueIndex + 1 > self.plainText:len() then return end
+		
+		local nextWrapIndex = self.wrapIndex + 1
+		local nextIndex     = self.trueIndex + 1
+		local plainText     = self.plainText
+		local _, textWrap   = self.font:getWrap(self.plainText,self.wrap)
+		local _, newLines   = self.plainText:gsub("\n","")
+		local line          = textWrap[self.line] or ""
+		local nextCharInLine = string.utf8sub(line, nextWrapIndex, nextWrapIndex)
+		local nextCharInText = string.utf8sub(plainText, nextIndex, nextIndex)
+		local nextNextCharInText = string.utf8sub(plainText, nextIndex + 1, nextIndex + 1)
+		
+		print(nextCharInText:gsub("\n","~"))
+		if nextCharInLine == "" then
+			if nextCharInText == "\n" then
 				self.trueIndex = self.trueIndex + 1
-				self.line      = self.line + 1					
-			elseif nextCharTA ~= "" then
-				if nextCharWB == "" and textWrap[self.line+1] and nextCharTB ~= "\n" then
-					self.wrapIndex = 0
-					self.trueIndex = self.trueIndex + 1
-					self.line      = self.line + 1
-				else
-					self.wrapIndex = self.wrapIndex + 1
-					self.trueIndex = self.trueIndex + 1
-				end
+				self.line      = self.line + 1
+				self.wrapIndex = 0
+			else
+				self.trueIndex = self.trueIndex + 1
+				self.line      = self.line + 1
+				self.wrapIndex = 1
+			end
+		else
+			print (self.wrapIndex + 1, line:len())
+			if self.wrapIndex + 1 >= line:len() and self.line + 1 <= #textWrap and nextNextCharInText ~= "\n" then
+				print 'if'
+				self.trueIndex = self.trueIndex + 1
+				self.line      = self.line + 1
+				self.wrapIndex = 0
+			else
+				print 'else'
+				self.trueIndex = self.trueIndex + 1
+				self.wrapIndex = self.wrapIndex + 1
 			end
 		end
 		self:updateCursor()
 	end
-	
 	
 	--[[
 	textBox.meta.moveIndexHorizontal = function(self, dir, isDel)
@@ -270,43 +279,88 @@ function love.load()
 		self:updateCursor()
 	end
 	
-	textBox.meta.moveIndexUp = function(self)
-		local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
+	textBox.meta.moveIndexDown = function(self)
+		
+		
+		local plainText    = self.plainText
+		local _, textWrap  = self.font:getWrap(plainText,self.wrap)
+		local _, lineCount = plainText:gsub("\n","")
+		lineCount          = #textWrap + math.min(lineCount - #textWrap, 0)
+		
+		if self.line > math.max(lineCount,1) then return end  --If we can move down, leave function
+		
 		local thisLine    = textWrap[self.line] or ""
-		local nextLine    = textWrap[self.line - 1] or ""
+		local nextLine    = textWrap[self.line + 1] or ""
+		
+		local nextLineLen = nextLine:len()
+		
 		local wrapIndex   = self.wrapIndex
 		local newIndex    = 0
-		local moveTo      = roundToInt(nextLine:len()*self.cursorX/self.font:getWidth(nextLine))
-		local textLength  = self.plainText:len()
-		if tostring(moveTo) == "nan" then return end
-		if moveTo > nextLine:len() then
-			print'a'
-			self.wrapIndex = nextLine:len()
-			self.line = self.line - 1
-		else
-			print'b'
-			self.wrapIndex = moveTo
-			for i = self.line, 1, -1 do
-				print'loop'
-				if i == 1 then
-					print((textWrap[i] or ""):sub(moveTo, -1))
-					newIndex = newIndex + string.utf8sub((textWrap[i] or ""), moveTo, -1):len()
-				else
-					print((textWrap[i] or ""))
-					newIndex = newIndex + (textWrap[i] or ""):len()
-				end
-				if self.plainText:sub(-(newIndex + 1), -(newIndex + 1)) == "\n" then
-				newIndex = newIndex + 1
-			end
+		
+		local moveTo      = roundToInt(nextLineLen*self.cursorX/self.font:getWidth(nextLine))
+		
+		if tostring(moveTo) == "nan" then -- If moveTo is not a number then
+			moveTo = 0                    -- Set moveTo to 0
 		end
-			if wrapIndex == 0 then
-				newIndex = newIndex + 1
-			end
-			print(-newIndex)
-				
-			self.trueIndex = string.utf8sub(self.plainText,0,-newIndex):len()
-			self.line = self.line - 1
+		
+		if moveTo > nextLineLen then      -- If moveTo is past the line length
+			moveTo = nextLineLen          -- set MoveTo equal to line length
 		end
+		
+		local thisLineOffSet = string.utf8sub(thisLine, wrapIndex + 1, -1):len()                  --Find the off set within current line; ex: [(xx)|xxx] => offset of 2
+		local nextLineOffSet = string.utf8sub(nextLine, 0, moveTo == "nan" and 1 or moveTo):len() --Find the off set within next line; ex: [xx|(xxx)] => offset of 3
+		
+		
+		
+		self.line = self.line + 1
+		self.trueIndex = self.trueIndex + thisLineOffSet                                -- Move forward by how many chars are ahead of us
+		if string.utf8sub(plainText, self.trueIndex + 1, self.trueIndex + 1) == "\n" then  -- If the next char is a new line =>
+			self.trueIndex = self.trueIndex + 1                                         -- Move index for on more.
+		end                                                                             --
+		self.trueIndex = self.trueIndex + nextLineOffSet                                -- Move forward by how many characters are behind moveTo
+		self.wrapIndex = moveTo                                                         -- Set wrapped Index to where we moved to
+		
+		self:updateCursor()
+	end
+	
+	textBox.meta.moveIndexUp = function(self)
+		
+		if self.line == 1 then return end --If we can't move up leave function
+		
+		local plainText      = self.plainText
+		local _, textWrap    = self.font:getWrap(plainText,self.wrap)
+		local thisLine       = textWrap[self.line] or ""
+		local nextLine       = textWrap[self.line - 1] or ""
+		
+		local nextLineLen    = nextLine:len()
+		
+		local wrapIndex      = self.wrapIndex
+		local newIndex       = 0
+		
+		local moveTo         = roundToInt(nextLineLen*self.cursorX/self.font:getWidth(nextLine))
+		
+		if tostring(moveTo) == "nan" then  -- If moveTo is not a number then
+			moveTo = 0                     -- Set moveTo to 0
+		end
+		
+		if moveTo > nextLineLen then      -- If moveTo is past the line length
+			moveTo = nextLineLen          -- set MoveTo equal to line length
+		end
+		
+		
+		local thisLineOffSet = string.utf8sub(thisLine, 0, wrapIndex):len()                             --Find the off set within current line; ex: [xx|(xxx)] => offset of 3
+		local nextLineOffSet = string.utf8sub(nextLine, moveTo == "nan" and 1 or moveTo + 1, -1):len()  --Find the off set within next line; ex: [(xx)|xxx] => offset of 2
+		
+		
+		
+		self.line = self.line - 1
+		self.trueIndex = self.trueIndex - thisLineOffSet                           -- Move backwards by how many chars are behind us.
+		if string.utf8sub(plainText, self.trueIndex, self.trueIndex) == "\n" then  -- If the next char is a newline =>
+			self.trueIndex =self.trueIndex - 1                                     -- Move back one more.
+		end                                                                        -- 
+		self.trueIndex = self.trueIndex - nextLineOffSet                           -- Move backwards by how many chars are in front of new location.
+		self.wrapIndex = moveTo                                                    -- Set wrapped index to moveTo.
+		
 		self:updateCursor()
 	end
 	
@@ -314,7 +368,6 @@ function love.load()
 	textBox.meta.addText  = function(self, text)
 		local textBefore  = string.utf8sub(self.plainText, 0, self.trueIndex)
 		local textAfter   = string.utf8sub(self.plainText, self.trueIndex+1, -1)
-		--local adjust      = 0
 		
 		self.plainText    = table.concat{textBefore, text, textAfter}
 		local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
@@ -324,7 +377,7 @@ function love.load()
 		
 		if self.wrapIndex > textWrap[self.line]:len() then
 			
-			self.line      = math.max(#textWrap, 1)
+			self.line      = self.line + 1
 			self.wrapIndex = 1
 			
 		end
@@ -332,15 +385,10 @@ function love.load()
 		self:updateCursor()
 	end
 	
-	--testerBox.meta.remove = function(self,
 	
 	textBox.meta.updateCursor = function(self)
 		local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
 		self.cursorX = self.font:getWidth(string.utf8sub(textWrap[self.line] or "", 0, self.wrapIndex))
-		--[[
-		out = textWrap[self.line] == "" and "@" or (textWrap[self.line] or "@")
-		print(string.utf8sub(out:gsub('\n','~'):gsub(' ', '_'), 0, self.wrapIndex))
-		--]]
 		self.cursorY = self.line * self.fontHeight
 	end
 	
@@ -364,7 +412,7 @@ function love.load()
 		local textRem           = string.utf8sub(self.plainText, self.trueIndex, self.trueIndex)           --Text removed at index
 		local textAfter         = string.utf8sub(self.plainText, self.trueIndex + 1, self.plainText:len()) --Text after the index
 		self.plainText     = table.concat{textBefore,textAfter}                                            --Update the plainText string
-		self:moveIndexLeft(true)                                                                  --Move cursor back one
+		self:moveIndexLeft(true)                                                                           --Move cursor back one
 		self:setText(self.plainText,self.wrap,self.align)                                                  --Update display text
 	end
 	
@@ -376,18 +424,6 @@ function love.load()
 		self:moveIndexRight()
 	end
 	testerBox = textBox:new("", 100, 100)
-	
-	font = love.graphics.getFont()
-	fontHeight = font:getHeight()
-	wrap = 100
-	plainText = ""
-	formatedText = love.graphics.newText(font)
-	formatedText:setf(plainText, wrap, "left")
-	
-	cursorTextIndex = 0
-	cursorPos = 0
-	cursorLine = 1
-	
 end
 
 
@@ -439,7 +475,7 @@ function love.keypressed(key)
 	end
 	
 	if key == "down" then
-		testerBox:moveIndexVertical(1)
+		testerBox:moveIndexDown()
 	end
 	
 	testerBox.blinkTimer = 0
