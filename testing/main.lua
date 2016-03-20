@@ -1,11 +1,11 @@
 --[[
 #	Text area todo
-	Make Movement System    [50%]
+	Make Movement System    [66%]
 	|:::Backspacing             [X]
 	|:::Left Movement           [X]
 	|:::Right Movement          [X]
 	|:::Upward Movement         [ ]
-	|:::Downward Movement       [ ]
+	|:::Downward Movement       [X]
 	|:::Free-form Movement      [ ]
 	
 	Make Android Compatable [0%]
@@ -62,8 +62,8 @@ function love.load()
 		end
 		
 	}
-	textBox.meta ={}
-	textBox.meta.editing = false
+	textBox.meta = {}
+	textBox.meta.editing = true
 	
 	textBox.meta.setText = function(self,text)
 		self.drawnText:setf(text, self.wrap, self.align)
@@ -108,6 +108,55 @@ function love.load()
 		love.graphics.setLineStyle("rough")
 	end
 	
+	
+		textBox.meta.moveIndexLeft = function(self, isBS)
+		if self.trueIndex - 1 >= 0 then
+			local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
+			local textBehind = string.utf8sub(self.plainText, 0, self.trueIndex - 1)
+			local _, wrapBehind = self.font:getWrap(textBehind,self.wrap)
+			--print(self.wrapIndex)
+			self.trueIndex = self.trueIndex - 1
+			--print(self.wrapIndex + dir == 0 and isDel and self.trueIndex + dir ~= 0,self.trueIndex + dir )
+			if (self.wrapIndex - 1 < 0 and self.trueIndex) or (self.wrapIndex - 1 == 0 and isBS and self.trueIndex ~= 0) then
+				self.line      = self.line - 1
+				self.wrapIndex = (wrapBehind[self.line] or ""):len()
+			else
+				self.wrapIndex = self.wrapIndex - 1
+			end
+		end
+		self:updateCursor()
+	end
+	
+	textBox.meta.moveIndexRight = function(self)
+		if self.trueIndex + 1 <= self.plainText:len() then
+			local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
+			local currentLine = textWrap[self.line] or ""
+			--Grade A variable naming
+			local nextCharTA, nextCharTB         = string.utf8sub(self.plainText, self.trueIndex + 1, self.trueIndex + 1) ,string.utf8sub(self.plainText, self.trueIndex + 2, self.trueIndex + 2)
+			local nextCharWA, nextCharWB         = string.utf8sub(currentLine, self.wrapIndex + 1, self.wrapIndex + 1), string.utf8sub(currentLine, self.wrapIndex + 2, self.wrapIndex + 2)
+			
+			--print(nextChars[1]:gsub('\n','~'):gsub(' ', '_'),nextChars[2]:gsub('\n','~'):gsub(' ', '_'))
+			print(nextCharTA:gsub('\n','~'):gsub(' ', '_'), nextCharTB:gsub('\n','~'):gsub(' ', '_'), nextCharWA, nextCharWB)
+			if nextCharTA == '\n' then
+				self.wrapIndex = 0
+				self.trueIndex = self.trueIndex + 1
+				self.line      = self.line + 1					
+			elseif nextCharTA ~= "" then
+				if nextCharWB == "" and textWrap[self.line+1] and nextCharTB ~= "\n" then
+					self.wrapIndex = 0
+					self.trueIndex = self.trueIndex + 1
+					self.line      = self.line + 1
+				else
+					self.wrapIndex = self.wrapIndex + 1
+					self.trueIndex = self.trueIndex + 1
+				end
+			end
+		end
+		self:updateCursor()
+	end
+	
+	
+	--[[
 	textBox.meta.moveIndexHorizontal = function(self, dir, isDel)
 		print("Hello: ", self.trueIndex,self.plainText:len())
 		if self.trueIndex + dir <= self.plainText:len() and self.trueIndex + dir >= 0 then
@@ -154,17 +203,113 @@ function love.load()
 		end
 		self:updateCursor()
 	end
-	
+	]]
+
 	textBox.meta.moveIndexVertical  = function(self, dir)
 		local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
-		local line = textWrap[self.line + dir] or ""
-		local setIndex = roundToInt(line:len()*self.cursorX/self.font:getWidth(line))
-		if dir < 0 then
-			print(setIndex)
-		elseif dir > 0 then
-			print(setIndex)
+		local thisLine    = textWrap[self.line] or ""
+		local nextLine    = textWrap[self.line + dir] or ""
+		local wrapIndex   = self.wrapIndex
+		local newIndex    = 0
+		local moveTo      = roundToInt(nextLine:len()*self.cursorX/self.font:getWidth(nextLine))
+		local textLength  = self.plainText:len()
+		print(moveTo)
+		if tostring(moveTo) ~= "nan"  then
+			if dir < 0 and self.line > 1 then
+				if moveTo > nextLine:len() then
+					print'a'
+					self.wrapIndex = nextLine:len()
+					self.line = self.line - 1
+				else
+					print'b'
+					self.wrapIndex = moveTo
+					for i = self.line, 1, -1 do
+						print'loop'
+						if i == 1 then
+							print((textWrap[i] or ""):sub(moveTo, -1))
+							newIndex = newIndex + string.utf8sub((textWrap[i] or ""), moveTo, -1):len()
+						else
+							print((textWrap[i] or ""))
+							newIndex = newIndex + (textWrap[i] or ""):len()
+						end
+						if self.plainText:sub(-(newIndex + 1), -(newIndex + 1)) == "\n" then
+							newIndex = newIndex + 1
+						end
+					end
+					if wrapIndex == 0 then
+						newIndex = newIndex + 1
+					end
+					print(-newIndex)
+					
+					self.trueIndex = string.utf8sub(self.plainText,0,-newIndex):len()
+					self.line = self.line - 1
+				end
+			elseif dir > 0 and self.line < #textWrap then
+				if moveTo > nextLine:len() then
+					self.wrapIndex = nextLine:len()
+				else
+					self.wrapIndex = moveTo
+					for i = 1, self.line + 1 do
+						print'loop'
+						if i == self.line then
+							print((textWrap[i] or ""):sub(0, moveTo))
+							newIndex = newIndex + string.utf8sub((textWrap[i] or ""), 0, moveTo):len()
+						else
+							print((textWrap[i] or ""))
+							newIndex = newIndex + (textWrap[i] or ""):len()
+						end
+						if self.plainText:sub((newIndex + 1), (newIndex + 1)) == "\n" then
+							newIndex = newIndex + 1
+						end
+					end
+					self.trueIndex = string.utf8sub(self.plainText,0,newIndex):len()
+					self.line = self.line + 1
+				end
+			end
 		end
+		self:updateCursor()
 	end
+	
+	textBox.meta.moveIndexUp = function(self)
+		local _, textWrap = self.font:getWrap(self.plainText,self.wrap)
+		local thisLine    = textWrap[self.line] or ""
+		local nextLine    = textWrap[self.line - 1] or ""
+		local wrapIndex   = self.wrapIndex
+		local newIndex    = 0
+		local moveTo      = roundToInt(nextLine:len()*self.cursorX/self.font:getWidth(nextLine))
+		local textLength  = self.plainText:len()
+		if tostring(moveTo) == "nan" then return end
+		if moveTo > nextLine:len() then
+			print'a'
+			self.wrapIndex = nextLine:len()
+			self.line = self.line - 1
+		else
+			print'b'
+			self.wrapIndex = moveTo
+			for i = self.line, 1, -1 do
+				print'loop'
+				if i == 1 then
+					print((textWrap[i] or ""):sub(moveTo, -1))
+					newIndex = newIndex + string.utf8sub((textWrap[i] or ""), moveTo, -1):len()
+				else
+					print((textWrap[i] or ""))
+					newIndex = newIndex + (textWrap[i] or ""):len()
+				end
+				if self.plainText:sub(-(newIndex + 1), -(newIndex + 1)) == "\n" then
+				newIndex = newIndex + 1
+			end
+		end
+			if wrapIndex == 0 then
+				newIndex = newIndex + 1
+			end
+			print(-newIndex)
+				
+			self.trueIndex = string.utf8sub(self.plainText,0,-newIndex):len()
+			self.line = self.line - 1
+		end
+		self:updateCursor()
+	end
+	
 	
 	textBox.meta.addText  = function(self, text)
 		local textBefore  = string.utf8sub(self.plainText, 0, self.trueIndex)
@@ -206,29 +351,29 @@ function love.load()
 	textBox.meta.onReturn = function(self, key)
 		local textBefore = string.utf8sub(self.plainText, 1, self.trueIndex)                     --Get text before the current |Plain Text Index| position
 		local textAfter  = string.utf8sub(self.plainText, self.trueIndex+1,self.plainText:len()) --Get text after the current |Plain Text Index| position
-		self.plainText   = table.concat{textBefore,'\n',textAfter}                             --concatenate table of text, update the |Plain Text|
-		self.line        = self.line + 1                                                 --Increament |Cursor's line| position
-		self.trueIndex   = self.trueIndex + 1                                                --Increament |Cursor Index| for |Plain Text| (to account for the '\n' character)
-		self.wrapIndex   = 0                                                                   --Rest |Cursor's Wrapped Index| to 1 (to account for the '\n' character)		
-		self:updateCursor()
-		self:setText(self.plainText,self.wrap,self.align)
+		self.plainText   = table.concat{textBefore,'\n',textAfter}                               --concatenate table of text, update the |Plain Text|
+		self.line        = self.line + 1                                                         --Increament |Cursor's line| position
+		self.trueIndex   = self.trueIndex + 1                                                    --Increament |Cursor Index| for |Plain Text| (to account for the '\n' character)
+		self.wrapIndex   = 0                                                                     --Rest |Cursor's Wrapped Index| to 1 (to account for the '\n' character)		
+		self:updateCursor()                                                                      --Update cursor position
+		self:setText(self.plainText,self.wrap,self.align)                                        --Update display text
 	end
 	
 	textBox.meta.onBackspace = function(self, key)
 		local textBefore        = string.utf8sub(self.plainText, 0, self.trueIndex - 1)                    --Text before the index
-		local textRem           = string.utf8sub(self.plainText, self.trueIndex, self.trueIndex)         --Text removed at index
+		local textRem           = string.utf8sub(self.plainText, self.trueIndex, self.trueIndex)           --Text removed at index
 		local textAfter         = string.utf8sub(self.plainText, self.trueIndex + 1, self.plainText:len()) --Text after the index
-		self.plainText     = table.concat{textBefore,textAfter}                                              --Update the plainText string
-		self:moveIndexHorizontal(-1,true)
-		self:setText(self.plainText,self.wrap,self.align)
+		self.plainText     = table.concat{textBefore,textAfter}                                            --Update the plainText string
+		self:moveIndexLeft(true)                                                                  --Move cursor back one
+		self:setText(self.plainText,self.wrap,self.align)                                                  --Update display text
 	end
 	
-	textBox.meta.onLeft = function(self, key) -- |Uses the same logic a backspace, but The Plain Text stays the same|
-		self:moveIndexHorizontal(-1)
+	textBox.meta.onLeft = function(self, key) 
+		self:moveIndexLeft()            --Move cursor left
 	end
 	
 	textBox.meta.onRight = function(self, key)
-		self:moveIndexHorizontal(1)
+		self:moveIndexRight()
 	end
 	testerBox = textBox:new("", 100, 100)
 	
@@ -290,7 +435,7 @@ function love.keypressed(key)
 	end
 	
 	if key == "up" then
-		testerBox:moveIndexVertical(-1)
+		testerBox:moveIndexUp()
 	end
 	
 	if key == "down" then
