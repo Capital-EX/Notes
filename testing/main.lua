@@ -7,7 +7,7 @@
 	|:::Upward Movement         [X]
 	|:::Downward Movement       [X]
 	|:::Free-form Movement      [ ]
-	
+
 	Make Android Compatable [0%]
 	|:::Make way to find touch in text [ ]
 	|:::Make Cursor move with touch    [ ]
@@ -24,27 +24,27 @@ function love.load()
 	end
 
 	textBox = {
-		new = function(self, text, x, y, wrap, align, font) 
+		new = function(self, text, x, y, wrap, align, font)
 			local tb      = {}
-			
+
 			tb.font       = font or love.graphics.getFont()
 			tb.fontHeight = tb.font:getHeight()
-			
+
 			tb.x          = x or 0
 			tb.y          = y or 0
 			tb.width      = wrap or tb.font:getWidth("m") * 5   --Defaults to 5 em of space
 			tb.minHeight  = 5 * tb.fontHeight
 			tb.height     = tb.minHeight
 			tb.plainText  = text or ""
-			
+
 			tb.handleWidth  = 10 * love.window.getPixelScale()
 			tb.handleHeight = 10 * love.window.getPixelScale()
-			
+
 			tb.isEditing    = false
 			--tb.enabled    = false
 			tb.hasFocus   = false
 			tb.isDragging = false
-			
+
 			tb.wrap       =  tb.width
 			tb.align      = align or "left"
 			tb.padding    = {
@@ -53,33 +53,33 @@ function love.load()
 				bottom = 0,
 				left   = 0,
 			}
-			
+
 			local _, wraps = tb.font:getWrap(tb.plainText,tb.wrap)
-			
+
 			tb.drawnText   = love.graphics.newText(tb.font)
 			tb.drawnText:addf(tb.plainText, tb.wrap, tb.align,0,0)
-			
+
 			tb.trueIndex   = tb.plainText:len()                       --Where we are in the full string of plain text
 			tb.wrapIndex   = #wraps == 0 and 0 or wraps[#wraps]:len() --Where we are in the current line of wrapped text
 			tb.line        = 1
-			
+
 			tb.cursorX         = tb.font:getWrap(tb.plainText, tb.wrap)
 			tb.cursorY         = tb.fontHeight * math.max(tb.line,1)
-			
+
 			tb.showCursor      = true
 			tb.blinkDelay      = 0.5
 			tb.blinkTimer      = 0
-			
+
 			return setmetatable(tb,{__index = self.meta})
 		end
-		
+
 	}
 	textBox.meta = {}
-	
+
 	textBox.meta.setText = function(self,text)
 		self.drawnText:setf(text, self.wrap, self.align)
 	end
-	
+
 	textBox.meta.draw = function(self)
 		love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
 		love.graphics.draw(self.drawnText,self.x,self.y)
@@ -88,19 +88,19 @@ function love.load()
 		end
 		love.graphics.rectangle("fill", self.width + self.x, self.height + self.y, self.handleWidth, self.handleHeight)
 	end
-	
+
 	textBox.meta.drawCursor = function(self)
 		love.graphics.setLineStyle("rough")
 		love.graphics.setLineWidth(1)
 		love.graphics.line(
-			self.cursorX + self.x, 
-			self.cursorY + self.y, 
-			self.cursorX + self.x, 
+			self.cursorX + self.x,
+			self.cursorY + self.y,
+			self.cursorX + self.x,
 			self.cursorY + self.y - self.fontHeight
 		)
 		love.graphics.setLineStyle("rough")
 	end
-	
+
 	textBox.meta.update = function(self, dt)
 		if self.hasFocus then
 			self.blinkTimer = self.blinkTimer + dt
@@ -114,12 +114,12 @@ function love.load()
 			self.isDraging  = false
 		end
 	end
-	
+
 	textBox.meta.updateCursor = function(self)
 		local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
 		self.cursorX = self.font:getWidth(string.utf8sub(textWrap[self.line] or "", 0, self.wrapIndex))
 		self.cursorY = self.line * self.fontHeight
-		
+
 		local _, lineCount = self.plainText:gsub("\n","")
 		lineCount          = #textWrap + lineCount - (lineCount - #textWrap > 0 and lineCount - #textWrap or 0)
 		print(lineCount * self.fontHeight, #textWrap)
@@ -129,41 +129,41 @@ function love.load()
 			self.height = self.minHeight
 		end
 	end
-	
+
 	textBox.meta.keypressed = function(self, key)
-		if key == "return" then	
+		if key == "return" then
 			self:onReturn(key)
 		end
-		
+
 		if key == "backspace" and self.trueIndex > 0 then
 		self:onBackspace(key)
 		end
-		
-		if key == "left" then 
-			self:moveIndexLeft() 
+
+		if key == "left" then
+			self:moveIndexLeft()
 		end
-		
-		if key == "right" then		
+
+		if key == "right" then
 			self:moveIndexRight()
 		end
-		
+
 		if key == "up" then
 			self:moveIndexUp()
 		end
-		
+
 		if key == "down" then
 			self:moveIndexDown()
 		end
 		self.blinkTimer = 0
-		self.showCursor = true	
+		self.showCursor = true
 	end
-	
+
 	textBox.meta.moveIndexLeft = function(self, isBS)
 		if self.trueIndex - 1 < 0 then return end
 			local textBehind = string.utf8sub(self.plainText, 0, self.trueIndex - 1)
 			local _, wrapBehind = self.font:getWrap(textBehind,self.wrap)
 			self.trueIndex = self.trueIndex - 1
-			if (self.wrapIndex - 1 < 0 and self.trueIndex) or 
+			if (self.wrapIndex - 1 < 0 and self.trueIndex) or
 			(self.wrapIndex - 1 == 0 and isBS and self.trueIndex ~= 0) then
 				self.line      = self.line - 1
 				self.wrapIndex = (wrapBehind[self.line] or ""):len()
@@ -172,9 +172,8 @@ function love.load()
 			end
 		self:updateCursor()
 	end
-	
+
 	textBox.meta.moveIndexRight = function(self)
-		
 		if self.trueIndex + 1 > self.plainText:len() then return end
 		
 		local nextWrapIndex = self.wrapIndex + 1
@@ -199,7 +198,7 @@ function love.load()
 			end                                     -- |
 		else                                        -- Else
 			if self.wrapIndex + 1 >= line:len() and -- |::If the next index is past cur line;
-			self.line + 1 <= #textWrap and          -- |::And line-count is less than textwrap; 
+			self.line + 1 <= #textWrap and          -- |::And line-count is less than textwrap;
 			nextNextCharInText ~= "\n" then         -- |::And the next next char is not a newline  =>
 				self.line      = self.line + 1      -- |::::Move Down a line
 				self.trueIndex = self.trueIndex + 1 -- |::::
@@ -211,9 +210,8 @@ function love.load()
 		end
 		self:updateCursor()
 	end
-	
+
 	textBox.meta.moveIndexDown = function(self)
-		
 		
 		local plainText    = self.plainText
 		local _, textWrap  = self.font:getWrap(plainText,self.wrap)
@@ -250,9 +248,8 @@ function love.load()
 		
 		self:updateCursor()
 	end
-	
+
 	textBox.meta.moveIndexUp = function(self)
-		
 		if self.line == 1 then return end --If we can't move up leave function
 		
 		local plainText      = self.plainText
@@ -281,18 +278,18 @@ function love.load()
 		self.trueIndex = self.trueIndex - thisLineOffSet                           -- Move backwards by how many chars are behind us.
 		if string.utf8sub(plainText, self.trueIndex, self.trueIndex) == "\n" then  -- If the next char is a newline =>
 			self.trueIndex =self.trueIndex - 1                                     -- |::Move back one more.
-		end                                                                        -- 
+		end                                                                        --
 		self.trueIndex = self.trueIndex - nextLineOffSet                           -- Move backwards by how many chars are in front of new location.
 		self.wrapIndex = moveTo                                                    -- Set wrapped index to moveTo.
 		
 		self:updateCursor()
 	end
-	
-	
+
+
 	textBox.meta.addText  = function(self, text)
 		local textBefore  = string.utf8sub(self.plainText, 0, self.trueIndex)
 		local textAfter   = string.utf8sub(self.plainText, self.trueIndex+1, -1)
-		
+	
 		self.plainText    = table.concat{textBefore, text, textAfter}
 		local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
 		print(textWrap[self.line])
@@ -306,20 +303,18 @@ function love.load()
 		self:setText(self.plainText,self.wrapIndex, self.align)
 		self:updateCursor()
 	end
-	
-	
-	
+
 	textBox.meta.onReturn = function(self)
 		local textBefore = string.utf8sub(self.plainText, 1, self.trueIndex)                     --Get text before the current |Plain Text Index| position
 		local textAfter  = string.utf8sub(self.plainText, self.trueIndex+1,self.plainText:len()) --Get text after the current |Plain Text Index| position
 		self.plainText   = table.concat{textBefore,'\n',textAfter}                               --concatenate table of text, update the |Plain Text|
 		self.line        = self.line + 1                                                         --Increament |Cursor's line| position
 		self.trueIndex   = self.trueIndex + 1                                                    --Increament |Cursor Index| for |Plain Text| (to account for the '\n' character)
-		self.wrapIndex   = 0                                                                     --Rest |Cursor's Wrapped Index| to 1 (to account for the '\n' character)		
+		self.wrapIndex   = 0                                                                     --Rest |Cursor's Wrapped Index| to 1 (to account for the '\n' character)
 		self:updateCursor()                                                                      --Update cursor position
 		self:setText(self.plainText,self.wrap,self.align)                                        --Update display text
 	end
-	
+
 	textBox.meta.onBackspace = function(self)
 		local textBefore        = string.utf8sub(self.plainText, 0, self.trueIndex - 1)                    --Text before the index
 		local textAfter         = string.utf8sub(self.plainText, self.trueIndex + 1, self.plainText:len()) --Text after the index
@@ -327,24 +322,24 @@ function love.load()
 		self:moveIndexLeft(true)                                                                           --Move cursor back one
 		self:setText(self.plainText,self.wrap,self.align)                                                  --Update display text
 	end
-	
+
 	textBox.meta.textinput = function(self, key)
 		if self.isEditing then
 			self:addText(key)
 		end
 	end
-	
+
 	textBox.meta.pressed  = function(self,x,y)
 		local mx = x or love.mouse.getX()
 		local my = y or love.mouse.getY()
-		if (mx > self.x + self.width and mx < self.x + self.width + self.handleWidth) and 
+		if (mx > self.x + self.width and mx < self.x + self.width + self.handleWidth) and
 		(my > self.y + self.height and my < self.y + self.height + self.handleHeight) then
 			print("yo")
 			self.isDragging = true
 		end
 		return self.isDragging
 	end
-	
+
 	textBox.meta.moved = function(self,dx,dy)
 		if self.isDragging then
 			print("YO")
@@ -352,7 +347,7 @@ function love.load()
 			self.y = self.y + dy
 		end
 	end
-	
+
 	textBox.meta.released = function(self, x, y)
 		local mx = x or love.mouse.getX()
 		local my = y or love.mouse.getY()
@@ -362,6 +357,7 @@ function love.load()
 			self.hasFocus = true
 			self.isEditing = true
 			self.showCursor = true
+			self:getTextCollide(mx,my)
 		else
 			love.keyboard.setTextInput(false)
 			self.hasFocus = false
@@ -370,7 +366,33 @@ function love.load()
 		return self.hasFocus
 	end
 	
-	
+	textBox.meta.getTextCollide = function(self, x, y)
+		local _, textWrap  = self.font:getWrap(self.plainText,self.wrap)
+		local _, lineCount = self.plainText:gsub("\n","")
+		lineCount          = #textWrap + (lineCount - #textWrap > 0 and lineCount - #textWrap or 0)
+		
+		local line         = math.ceil((y - self.y)/(lineCount*self.fontHeight))
+		print(line)
+		if line > lineCount then
+			line = lineCount
+		end
+		
+		local char
+		if not textWrap[line] then
+			char = 0
+		else
+			print((x - self.x),self.font:getWidth(textWrap[line]),(x - self.x)/self.font:getWidth(textWrap[line]))
+			local loc = roundToInt(textWrap[line]:len()*(x - self.x)/self.font:getWidth(textWrap[line]))
+			if loc > textWrap[line]:len() then
+				loc = textWrap[line]:len()
+			end
+			char = loc 
+		end
+		
+		print(line, char)
+		return line, char
+	end
+
 	textBoxes = {
 		inputCaught = false,
 		textBox:new("", 100, 100),
@@ -408,7 +430,7 @@ end
 function love.textinput(key, code)
 	for _, tb in ipairs(textBoxes) do
 		tb:textinput(key)
-	end	
+	end
 end
 
 function love.keypressed(key)
@@ -417,7 +439,7 @@ function love.keypressed(key)
 	end
 end
 
-function love.mousepressed(x, y, button) 
+function love.mousepressed(x, y, button)
 	for _, tb in ipairs(textBoxes) do
 		if not textBoxes.inputCaught then
 			textBoxes.inputCaught = tb:pressed(x, y)
@@ -438,7 +460,7 @@ function love.mousemoved(x,y,dx,dy)
 	end
 end
 
-function love.mousereleased(x, y, button) 
+function love.mousereleased(x, y, button)
 	for _, tb in ipairs(textBoxes) do
 		if not textBoxes.inputCaught then
 			textBoxes.inputCaught = tb:released(x, y)
@@ -447,14 +469,14 @@ function love.mousereleased(x, y, button)
 		end
 	end
 	textBoxes.inputCaught = false
-end 
+end
 
 --[[
 function love.touchpressed(id, x, y, pressure)
-	
+
 end
 
 function love.touchreleased(id, x, y, pressure)
-	
+
 end
 ]]
