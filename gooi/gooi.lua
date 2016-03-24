@@ -1385,7 +1385,7 @@ end
 ---------------------------------------------------------------------------------------------
 function gooi.released(id, x, y)
 	local c = gooi.getCompWithTouch(id)
-	gooi.updateFocus()
+	local bool = gooi.updateFocus()
 	if c then
 		if c.type == "joystick" then
 			c:restore()
@@ -1411,6 +1411,7 @@ function gooi.released(id, x, y)
 		c.pressed = false
 		c.touch = nil
 	end
+	return bool
 end
 ---------------------------------------------------------------------------------------------
 function gooi.getCompWithTouch(id)
@@ -1453,7 +1454,8 @@ function gooi.updateFocus()
 	for i = 1, #tf do
 		if tf[i].hasFocus then b = true end
 	end
-	if not b then love.keyboard.setTextInput(false) end
+	return b
+	--if not b then love.keyboard.setTextInput(false) end
 end
 
 function gooi.changeFont(font)-- Update font of every component:
