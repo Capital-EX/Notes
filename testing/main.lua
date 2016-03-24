@@ -1,12 +1,12 @@
 --[[
 #	Text area todo
-	Make Movement System    [83%]
+	Make Movement System    [ |100%| ] B)
 	|:::Backspacing             [X]
 	|:::Left Movement           [X]
 	|:::Right Movement          [X]
 	|:::Upward Movement         [X]
 	|:::Downward Movement       [X]
-	|:::Free-form Movement      [ ]
+	|:::Free-form Movement      [X]
 
 	Make Android Compatable [0%]
 	|:::Make way to find touch in text [ ]
@@ -298,7 +298,7 @@ function love.load()
 		
 		if self.wrapIndex > textWrap[self.line]:len() then
 			self.line      = self.line + 1
-			self.wrapIndex = (textWrap[self.line] or ""):len()
+			self.wrapIndex = 1
 		end
 		self:setText(self.plainText,self.wrapIndex, self.align)
 		self:updateCursor()
@@ -357,7 +357,35 @@ function love.load()
 			self.hasFocus = true
 			self.isEditing = true
 			self.showCursor = true
-			self:getTextCollide(mx,my)
+			local line, char
+			line, char = self:getTextCollide(mx,my)
+			print("pre:", self.wrapIndex, self.trueIndex)
+			if char == 0 and line == 0 then
+				self.trueIndex = 0
+				self.wrapIndex = 0
+			else
+				local lineDistance = line - self.line 
+				if lineDistance > 0 then
+					for i = 1, lineDistance do
+						self:moveIndexDown()
+					end
+				else
+					for i = 1, math.abs(lineDistance) do
+						self:moveIndexUp()
+					end
+				end
+				local charDistance = char - self.wrapIndex
+				if charDistance > 0 then
+					for i = 1, charDistance do
+						self:moveIndexRight()
+					end
+				else
+					for i = 1, math.abs(charDistance) do
+						self:moveIndexLeft()
+					end
+				end
+				print("post:", self.wrapIndex, self.trueIndex)
+			end
 		else
 			love.keyboard.setTextInput(false)
 			self.hasFocus = false
@@ -370,18 +398,17 @@ function love.load()
 		local _, textWrap  = self.font:getWrap(self.plainText,self.wrap)
 		local _, lineCount = self.plainText:gsub("\n","")
 		lineCount          = #textWrap + (lineCount - #textWrap > 0 and lineCount - #textWrap or 0)
-		
-		local line         = math.ceil((y - self.y)/(lineCount*self.fontHeight))
-		print(line)
+		local line         =  math.ceil(lineCount * (y - self.y)/(lineCount*self.fontHeight))
 		if line > lineCount then
 			line = lineCount
 		end
-		
+		if tostring(line) == "nan" then
+			line = 0
+		end
 		local char
 		if not textWrap[line] then
 			char = 0
 		else
-			print((x - self.x),self.font:getWidth(textWrap[line]),(x - self.x)/self.font:getWidth(textWrap[line]))
 			local loc = roundToInt(textWrap[line]:len()*(x - self.x)/self.font:getWidth(textWrap[line]))
 			if loc > textWrap[line]:len() then
 				loc = textWrap[line]:len()
@@ -389,7 +416,6 @@ function love.load()
 			char = loc 
 		end
 		
-		print(line, char)
 		return line, char
 	end
 
