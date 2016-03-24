@@ -1,17 +1,24 @@
 require 'gooi'
 tween = require 'tween.tween'
+textBox = require 'textBox'
 function love.load()
 	--[[
 		Draw Formating
 	]]
+	love.graphics.setBackgroundColor(232,255,255)
 	love.graphics.setLineStyle("smooth")
 	love.graphics.setLineJoin("bevel")
+	font = love.graphics.getFont()
 	
 	winW, winH  = love.graphics.getWidth(), love.graphics.getHeight()
 	--[[
 		Paper is the drawing surface
 	]]
 	paper = love.graphics.newCanvas()
+	
+	textBoxes = {
+		id = 0
+	}
 	
 	--[[
 		Brush Stuff
@@ -116,19 +123,23 @@ function love.load()
 	controlls.textMenu = gooi.newPanel("textControlls", controlls.x, controlls.y, controlls.width, controlls.height, "grid 9x1", "Text_controlls")
 	widgets = {
 		gooi.newLabel("fontSizeLabel","Font Size"):setOrientation("center"),
-		gooi.newLabel("test2","test2"):setOrientation("center"),
+		gooi.newSlider("fontSizeSlider"),
+		gooi.newButton("addTextBox","New Text Box"):setOrientation("center"):onRelease(
+			function() 
+				textBoxes.id = textBoxes.id + 1
+				local tb = textBox:new(textBoxes.id, love.graphics.getWidth()/2, love.graphics.getHeight()/2, 20*font:getWidth"M")
+				textBoxes[#textBoxes + 1] = tb
+			end	
+			),
 	}
 	for i = 1, #widgets do
 		widgets[i].group = "Text_controlls"
 		controlls.textMenu:add(widgets[i])
 	end
-	
-	love.graphics.setCanvas(gui)
-	
-	love.graphics.setCanvas()
-	
+	--[[
 	controlls.controllSelector.layout.debug = true
 	controlls.textMenu.layout.debug = true
+	--]]
 end
 
 function love.draw()
@@ -139,6 +150,12 @@ function love.draw()
 	love.graphics.setColor(255,255,255)
 	gooi.draw(controlls.menuState.."_controlls")
 	gooi.draw("controll_selector")
+	love.graphics.setColor(0,0,0)
+	for i = 1, #textBoxes do
+		--print(i)
+		textBoxes[i]:draw()
+	end
+	love.graphics.setColor(255,255,255)
 end
 
 function love.update(dt)
@@ -150,27 +167,71 @@ function love.update(dt)
 	gooi.draw("controll_selector")
 	love.graphics.setCanvas()
 	
+	for i = #textBoxes, 1, -1 do
+		textBoxes[i]:update(dt)
+		if textBoxes[i].remove then
+			print("removing text box ", i)
+		end
+	end
+	
+end
+
+function love.textinput(text)
+	for _, tb in ipairs(textBoxes) do
+		tb:textinput(text)
+	end
+end
+
+function love.keypressed(key,code)
+	for _, tb in ipairs(textBoxes) do
+		tb:keypressed(key)
+	end
 end
 
 function love.mousepressed(x,y,m,istouch)
 	--gooi.pressed(nil,x-controlls.x,y)
 	gooi.pressed()
+	
+	local isDragging = false
+	for _, tb in ipairs(textBoxes) do
+		if not textBoxes.inputCaught then
+			isDragging = tb:pressed(x, y)
+		else
+			tb.hasFocus = false
+		end
+	end
+	
 	if not ((controlls.x < x and x < controlls.width + controlls.x ) and 
-			(controlls.y < y and y < controlls.y + controlls.brushMenu.h )) then
+	(controlls.y < y and y < controlls.y + controlls.brushMenu.h )) and 
+	not isDragging then
 		brush.isDown = true
 	end
+	
 end
 
 function love.mousemoved(x,y,dx,dy)
 	if brush.isDown and #brush.curLine >= 4 then
 		brush:moved(x,y,dx,dy)
 	end
-	
+	for _, tb in ipairs(textBoxes) do
+		tb:moved(dx,dy)
+	end
 end
 
 function love.mousereleased()
-	gooi.released()
+	
 	brush.isDown = false
 	brush.curLine = {}
-	
+	local mouseCaught = gooi.released()
+	for _, tb in ipairs(textBoxes) do
+		if not mouseCaught then
+			mouseCaught = tb:released(x, y)
+		else
+			tb.hasFocus = false
+		end
+	end
+	if not mouseCaught then
+		love.keyboard.setTextInput(false)
+	end
+
 end
