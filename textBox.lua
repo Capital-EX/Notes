@@ -139,11 +139,13 @@ textBox.meta.moveIndexLeft = function(self, isBS)
         local textBehind = string.utf8sub(self.plainText, 0, self.trueIndex - 1)
         local _, wrapBehind = self.font:getWrap(textBehind,self.wrap)
         self.trueIndex = self.trueIndex - 1
-        if (self.wrapIndex - 1 < 0 and self.trueIndex) or
-        (self.wrapIndex - 1 == 0 and isBS and self.trueIndex ~= 0) then
+        if (self.wrapIndex - 1 < 0 and self.trueIndex ~= 0) then
             self.line      = self.line - 1
+			print("BS: ",(wrapBehind[self.line] or ""):len())
             self.wrapIndex = (wrapBehind[self.line] or ""):len()
-        else
+        elseif self.wrapIndex - 1 == 0 and isBS and self.trueIndex ~= 0 then
+			
+		else
             self.wrapIndex = self.wrapIndex - 1
         end
     self:updateCursor()
@@ -194,7 +196,7 @@ textBox.meta.moveIndexDown = function(self)
     local _, lineCount = plainText:gsub("\n","")
     lineCount          = #textWrap + (lineCount - #textWrap > 0 and lineCount - #textWrap or 0)
 
-    if self.line > math.max(lineCount,1) then return end  --If we can move down, leave function
+    if self.line >= math.max(lineCount,1) then return end  --If we can move down, leave function
 
     local thisLine    = textWrap[self.line] or ""
     local nextLine    = textWrap[self.line + 1] or ""
@@ -284,7 +286,7 @@ textBox.meta.textinput = function(self, text)
     if self.isEditing then
         local textBefore  = string.utf8sub(self.plainText, 0, self.trueIndex)
         local textAfter   = string.utf8sub(self.plainText, self.trueIndex+1, -1)
-
+		local numberAhead = textAfter:len()
         self.plainText    = table.concat{textBefore, text, textAfter}
         local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
         print(textWrap[self.line])
@@ -293,27 +295,37 @@ textBox.meta.textinput = function(self, text)
 
         if self.wrapIndex > textWrap[self.line]:len() then
             self.line      = self.line + 1
-            self.wrapIndex = 1
+			self.wrapIndex = textWrap[self.line]:len() - numberAhead
         end
         self:setText(self.plainText,self.wrapIndex, self.align)
         self:updateCursor()
     end
 end
 
-textBox.meta.pressed  = function(self,x,y)
+textBox.meta.pressed  = function(self,id,x,y)
+	local caught = false
     local mx = x or love.mouse.getX()
     local my = y or love.mouse.getY()
-    if (mx > self.x + self.width and mx < self.x + self.width + self.handleWidth) and
-    (my > self.y + self.height and my < self.y + self.height + self.handleHeight) then
-        print("yo")
+    if (mx > self.x and mx < self.x + self.width) and
+    (my > self.y - 40 * love.window.getPixelScale() and my < self.y) then
         self.isDragging = true
-    end
-    return self.isDragging
+		caught = true
+		if id and x and y then
+			self.touch = {id=id,x=x,y=y}
+		end
+    elseif (mx > self.x and mx < self.x + self.width) and (my > self.y and my < self.y + self.height) then
+		caught = true
+	end
+    return caught
 end
 
-textBox.meta.moved = function(self,dx,dy)
+textBox.meta.moved = function(self, x, y, dx, dy)
     if self.isDragging then
         print("YO")
+		if self.touch then
+			self.touch.x = x
+			self.touch.y = y
+		end
         self.x = self.x + dx
         self.y = self.y + dy
     end
@@ -360,6 +372,9 @@ textBox.meta.released = function(self, x, y)
     else
         self.hasFocus = false
     end
+	if self.touch then
+		self.touch = nil
+	end
     self.isDragging = false
     return self.hasFocus
 end
