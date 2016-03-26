@@ -1335,6 +1335,7 @@ end
 
 ---------------------------------------------------------------------------------------------
 function gooi.pressed(id, x, y)
+	local bool = false
 	for k, c in pairs(gooi.components) do
 		if c.enabled and c.visible then
 			if c.type == "joystick" then
@@ -1361,8 +1362,10 @@ function gooi.pressed(id, x, y)
 			if c:overIt(x, y) then
 				if id and x and y then
 					c.touch = {id = id, x = x, y = y}-- Touch used on touchscreens only.
+					bool = true
 				else
 					c.pressed = true -- Pressed just on PC (one pressed at once).
+					bool = true
 				end
 				if c.events.p then
 					c.events.p(c)-- onPress event.
@@ -1370,6 +1373,7 @@ function gooi.pressed(id, x, y)
 			end
 		end
 	end
+	return bool
 end
 ---------------------------------------------------------------------------------------------
 function gooi.moved(id, x, y)
