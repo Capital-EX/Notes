@@ -34,27 +34,37 @@ function love.load()
 		maxSize   = 20,
 		curLine   = {},
 		update    = function(self, dt)
-			local mx,my = love.mouse.getPosition()
+			local mx, my = love.mouse.getX(), love.mouse.getY()
 			if self.isDown then
+				
 				print(#self.curLine)
-				if #self.curLine == 0 then
-					self.curLine[#self.curLine+1] = self.oldmx
-					self.curLine[#self.curLine+1] = self.oldmy
-					self.curLine[#self.curLine+1] = mx
-					self.curLine[#self.curLine+1] = my
+				if self.isDown and self.oldmx ~= mx and self.oldmy ~= my then
+					print(mx,my)
+					if #self.curLine == 0 then
+						love.graphics.setCanvas(paper)
+							love.graphics.setColor(brush.color)
+							love.graphics.circle('fill',mx,my,math.ceil(brush.brushSize/2))
+							love.graphics.setColor(255,255,255)
+						love.graphics.setCanvas()
+					end
+						
+					self.curLine[#self.curLine + 1] = mx
+					self.curLine[#self.curLine + 1] = my
 				end
-				if self.isErase then
-					love.graphics.setBlendMode("replace")
-					love.graphics.setColor(0,0,0,0)
-				else
-					love.graphics.setColor(self.color)
+				if #self.curLine > 4 then
+					if self.isErase then
+						love.graphics.setBlendMode("replace")
+						love.graphics.setColor(0,0,0,0)
+					else
+						love.graphics.setColor(self.color)
+					end
+					love.graphics.setCanvas(paper)
+						love.graphics.setLineWidth(self.brushSize)
+						print(#self.curLine)
+						love.graphics.line(self.curLine)
+						love.graphics.setColor(255,255,255)
+					love.graphics.setCanvas()
 				end
-				love.graphics.setCanvas(paper)
-					love.graphics.setLineWidth(self.brushSize)
-					print(#self.curLine)
-					love.graphics.line(self.curLine)
-					love.graphics.setColor(255,255,255)
-				love.graphics.setCanvas()
 				love.graphics.setBlendMode("alpha")	
 			end
 			
@@ -64,10 +74,8 @@ function love.load()
 			self.oldmx, self.oldmy = mx,my
 		end,
 		moved    = function(self,x,y,dx,dy)
-			if self.isDown then
-				self.curLine[#self.curLine+1] = x
-				self.curLine[#self.curLine+1] = y
-			end
+			self.curLine[#self.curLine+1] = x
+			self.curLine[#self.curLine+1] = y
 		end
 		
 	}
@@ -110,9 +118,9 @@ function love.load()
 		controlls.brushMenu:add(widgets[i])
 	end
 	
-	controlls.controllSelector = gooi.newPanel("controllSelector",controlls.x+controlls.width,controlls.y,controlls.width/4,controlls.height, "grid 2x1", "controll_selector")
+	controlls.controllSelector = gooi.newPanel("controllSelector",controlls.x+controlls.width,controlls.y,controlls.width/4,controlls.height, "grid 3x1", "controll_selector")
 	widgets = {
-		gooi.newButton("BrushMenuButton","b\nr\nu\ns\nh\ne\ns"):setDirection("vertical"):onRelease(function(c) controlls:changeState("Brush") end),
+		gooi.newButton("BrushMenuButton","b\nr\nu\ns\nh\n"):setDirection("vertical"):onRelease(function(c) controlls:changeState("Brush") end),
 		gooi.newButton("TextMenuButton","t\ne\nx\nt"):setDirection("vertical"):onRelease(function(c) controlls:changeState("Text") end),
 	}
 	for i = 1, #widgets do
@@ -126,8 +134,9 @@ function love.load()
 		gooi.newSlider("fontSizeSlider"),
 		gooi.newButton("addTextBox","New Text Box"):setOrientation("center"):onRelease(
 			function() 
+				local font = love.graphics.newFont(gooi.get("fontSizeSlider").value * 30 + 12)
 				textBoxes.id = textBoxes.id + 1
-				local tb = textBox:new(textBoxes.id, love.graphics.getWidth()/2, love.graphics.getHeight()/2, 20*font:getWidth"M")
+				local tb = textBox:new(textBoxes.id, love.graphics.getWidth()/2, love.graphics.getHeight()/2, 20*font:getWidth"M", "left", font)
 				textBoxes[#textBoxes + 1] = tb
 			end	
 			),
@@ -147,26 +156,18 @@ function love.draw()
 	love.graphics.draw(paper,0,0)
 	love.graphics.setColor(100,100,100)
 	love.graphics.rectangle("fill",0,0,controlls.width,controlls.height)
-	love.graphics.setColor(255,255,255)
-	gooi.draw(controlls.menuState.."_controlls")
-	gooi.draw("controll_selector")
 	love.graphics.setColor(0,0,0)
 	for i = 1, #textBoxes do
-		--print(i)
 		textBoxes[i]:draw()
 	end
 	love.graphics.setColor(255,255,255)
+	gooi.draw(controlls.menuState.."_controlls")
+	gooi.draw("controll_selector")
 end
 
 function love.update(dt)
 	gooi.update(dt)
 	brush:update(dt)
-	love.graphics.setCanvas(gui)
-	love.graphics.clear(0,0,0,0)
-	gooi.draw("brush_controlls")
-	gooi.draw("controll_selector")
-	love.graphics.setCanvas()
-	
 	for i = #textBoxes, 1, -1 do
 		textBoxes[i]:update(dt)
 		if textBoxes[i].remove then
@@ -187,15 +188,14 @@ function love.keypressed(key,code)
 		tb:keypressed(key)
 	end
 end
-
+---[[
 function love.mousepressed(x,y,m,istouch)
 	--gooi.pressed(nil,x-controlls.x,y)
-	gooi.pressed()
-	
-	local isDragging = false
+	local isDragging = gooi.pressed()
 	for _, tb in ipairs(textBoxes) do
-		if not textBoxes.inputCaught then
-			isDragging = tb:pressed(x, y)
+		if not isDragging then
+			print("trying!")
+			isDragging = tb:pressed()
 		else
 			tb.hasFocus = false
 		end
@@ -210,28 +210,87 @@ function love.mousepressed(x,y,m,istouch)
 end
 
 function love.mousemoved(x,y,dx,dy)
+	for _, tb in ipairs(textBoxes) do
+		tb:moved(x,y,dx,dy)
+	end
+end
+
+function love.mousereleased(x,y)
+	if brush.isDown and #brush.curLine > 4 then
+		brush.curLine[#brush.curLine + 1] = x
+		brush.curLine[#brush.curLine + 1] = y
+		love.graphics.setCanvas(paper)
+			love.graphics.setLineWidth(brush.brushSize)
+			love.graphics.setColor(brush.color)
+			love.graphics.circle('fill',x,y,math.ceil(brush.brushSize/2))
+			love.graphics.line(brush.curLine)
+			love.graphics.setColor(255,255,255)
+		love.graphics.setCanvas()
+	else
+		love.graphics.setCanvas(paper)
+			love.graphics.setColor(brush.color)
+			love.graphics.circle('fill',x,y,math.ceil(brush.brushSize/2))
+			love.graphics.setColor(255,255,255)
+		love.graphics.setCanvas()
+	end
+	brush.isDown = false
+	brush.curLine = {}
+	local mouseCaught = gooi.released()
+	for _, tb in ipairs(textBoxes) do
+		if not mouseCaught then
+			mouseCaught = tb:released()
+		else
+			tb.hasFocus = false
+		end
+		tb.isDragging = false
+	end
+	if not mouseCaught then
+		love.keyboard.setTextInput(false)
+	end
+end
+--]]
+--[[
+function love.touchpressed(id, x, y)
+	local isDragging = gooi.pressed(id, x, y)
+	for _, tb in ipairs(textBoxes) do
+		if not isDragging then
+			isDragging = tb:pressed(id, x, y)
+		else
+			tb.hasFocus = false
+		end
+	end
+	
+	if not ((controlls.x < x and x < controlls.width + controlls.x ) and 
+	(controlls.y < y and y < controlls.y + controlls.brushMenu.h )) and 
+	not isDragging then
+		brush.isDown = true
+	end
+end
+
+function love.touchmoved(id, x, y, dx, dy)
+	gooi.moved(id, x, y)
 	if brush.isDown and #brush.curLine >= 4 then
 		brush:moved(x,y,dx,dy)
 	end
 	for _, tb in ipairs(textBoxes) do
-		tb:moved(dx,dy)
+		tb:moved(x, y, dx, dy)
 	end
 end
 
-function love.mousereleased()
-	
+function love.touchreleased(id,x,y)
 	brush.isDown = false
 	brush.curLine = {}
-	local mouseCaught = gooi.released()
+	local touchCaught = gooi.released(id,x,y)
 	for _, tb in ipairs(textBoxes) do
 		if not mouseCaught then
 			mouseCaught = tb:released(x, y)
 		else
 			tb.hasFocus = false
 		end
+		tb.isDragging = false
 	end
 	if not mouseCaught then
 		love.keyboard.setTextInput(false)
 	end
-
 end
+--]]
