@@ -143,8 +143,6 @@ textBox.meta.moveIndexLeft = function(self, isBS)
             self.line      = self.line - 1
 			print("BS: ",(wrapBehind[self.line] or ""):len())
             self.wrapIndex = (wrapBehind[self.line] or ""):len()
-        elseif self.wrapIndex - 1 == 0 and isBS and self.trueIndex ~= 0 then
-			
 		else
             self.wrapIndex = self.wrapIndex - 1
         end
@@ -297,7 +295,8 @@ textBox.meta.textinput = function(self, text)
             self.line      = self.line + 1
 			self.wrapIndex = textWrap[self.line]:len() - numberAhead
         end
-        self:setText(self.plainText,self.wrapIndex, self.align)
+		
+        self:setText(self.plainText)
         self:updateCursor()
     end
 end
