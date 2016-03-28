@@ -282,15 +282,23 @@ end
 
 textBox.meta.textinput = function(self, text)
     if self.isEditing then
+		local _, oldWrap  = self.font:getWrap(self.plainText, self.wrap)
         local textBefore  = string.utf8sub(self.plainText, 0, self.trueIndex)
         local textAfter   = string.utf8sub(self.plainText, self.trueIndex+1, -1)
 		local numberAhead = textAfter:len()
         self.plainText    = table.concat{textBefore, text, textAfter}
         local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
-        print(textWrap[self.line])
+        print(textWrap[self.line - 1],oldWrap[self.line - 1])
         self.trueIndex    = self.trueIndex + 1
         self.wrapIndex    = self.wrapIndex + 1
-
+		
+		if textWrap[self.line - 1] and oldWrap[self.line - 1] then
+			if textWrap[self.line - 1]:len() > oldWrap[self.line - 1]:len() then
+				print("Text wrapping changed negitavily!")
+				self.wrapIndex = 0
+			end
+		end
+		
         if self.wrapIndex > textWrap[self.line]:len() then
             self.line      = self.line + 1
 			self.wrapIndex = textWrap[self.line]:len() - numberAhead
