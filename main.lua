@@ -42,12 +42,12 @@ function love.load()
 					print(mx,my)
 					if #self.curLine == 0 then
 						love.graphics.setCanvas(paper)
+							love.graphics.setLineStyle("smooth")
 							love.graphics.setColor(brush.color)
 							love.graphics.circle('fill',mx,my,math.ceil(brush.brushSize/2))
 							love.graphics.setColor(255,255,255)
 						love.graphics.setCanvas()
 					end
-						
 					self.curLine[#self.curLine + 1] = mx
 					self.curLine[#self.curLine + 1] = my
 				end
@@ -226,7 +226,7 @@ function love.mousereleased(x,y)
 			love.graphics.line(brush.curLine)
 			love.graphics.setColor(255,255,255)
 		love.graphics.setCanvas()
-	else
+	elseif brush.isDown then
 		love.graphics.setCanvas(paper)
 			love.graphics.setColor(brush.color)
 			love.graphics.circle('fill',x,y,math.ceil(brush.brushSize/2))
