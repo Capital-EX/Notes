@@ -151,7 +151,10 @@ function love.load()
     controlls.saveMenu = gooi.newPanel("saveControlls", controlls.x, controlls.y, controlls.width, controlls.height, "grid 9x1", "Save_controlls")
     widgets = {
         gooi.newText("saveDirButton",""),
-        gooi.newButton("SaveButton", "Save"):setOrientation("center"):onRelease(function(c) local dir = gooi.get("saveDirButton",textBoxes ) end)
+        gooi.newButton("SaveButton", "Save"):setOrientation("center"):onRelease(function(c) 
+                local dir = gooi.get("saveDirButton").text
+                save(dir, textBoxes, paper)
+            end)
     }
     for i = 1,#widgets do
         widgets[i].group = "Save_controlls"
@@ -193,12 +196,14 @@ function love.textinput(text)
 	for _, tb in ipairs(textBoxes) do
 		tb:textinput(text)
 	end
+    gooi.textinput(text)
 end
 
 function love.keypressed(key,code)
 	for _, tb in ipairs(textBoxes) do
 		tb:keypressed(key)
 	end
+    gooi.keypressed(key, code)
 end
 ---[[
 function love.mousepressed(x,y,m,istouch)

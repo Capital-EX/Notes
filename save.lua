@@ -18,10 +18,28 @@ saveLines = function(lineList)
     return saved
 end
 
-save = function(dir, textBoxList, lineList)
+save = function(dir, textBoxList, canvas)
     saveDir = love.filesystem.getSaveDirectory()
-    love.filesystem.createDirectory(saveDir.."/"..dir)
+    dir = dir:gsub("[|\\*?:<>\"/]","")
+    if not love.filesystem.exists(dir) then
+        print"Making dir!"
+        love.filesystem.createDirectory(dir)
+    end
+    
+    textBoxFile, err = love.filesystem.newFile(dir.."/".."text.txt","w")
     txt = saveTextBoxes(textBoxList)
-    print(table.concat(txt,"\n"))
+    if #txt == 0 then
+       textBoxFile:write("") 
+    end
+    for k, textbox in ipairs(txt) do
+        textBoxFile:write(textbox)
+        textBoxFile:write('\n')
+    end
+    textBoxFile:close()
+    --notePaperImg, err = love.filesystem.newFile(dir.."/".."paper.png","w")
+    paperData = canvas:newImageData():encode("png",dir.."/".."paper.png")
+    --notePaperImg:write(paperData)
+    --notePaperImg:close()
+    --print(table.concat(txt,"\n"))
     print(saveDir, dir)
 end
