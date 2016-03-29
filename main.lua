@@ -233,16 +233,28 @@ function love.mousereleased(x,y)
 		brush.curLine[#brush.curLine + 1] = y
 		love.graphics.setCanvas(paper)
 			love.graphics.setLineWidth(brush.brushSize)
-			love.graphics.setColor(brush.color)
+			if brush.isErase then
+                love.graphics.setBlendMode("replace")
+                love.graphics.setColor(0,0,0,0)
+            else
+                love.graphics.setColor(brush.color)
+            end
 			love.graphics.circle('fill',x,y,math.ceil(brush.brushSize/2))
 			love.graphics.line(brush.curLine)
 			love.graphics.setColor(255,255,255)
+            love.graphics.setBlendMode("alpha")
 		love.graphics.setCanvas()
 	elseif brush.isDown then
 		love.graphics.setCanvas(paper)
-			love.graphics.setColor(brush.color)
+            if brush.isErase then
+                love.graphics.setBlendMode("replace")
+                love.graphics.setColor(0,0,0,0)
+            else
+                love.graphics.setColor(brush.color)
+            end
 			love.graphics.circle('fill',x,y,math.ceil(brush.brushSize/2))
 			love.graphics.setColor(255,255,255)
+            love.graphics.setBlendMode("alpha")
 		love.graphics.setCanvas()
 	end
 	brush.isDown = false
