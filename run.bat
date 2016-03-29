@@ -1,1 +1,2 @@
-love .
+"C:\Program Files\LOVE\love" .
+pause

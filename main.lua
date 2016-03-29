@@ -1,6 +1,7 @@
 require 'gooi'
 tween = require 'tween.tween'
 textBox = require 'textBox'
+require 'save'
 function love.load()
 	--[[
 		Draw Formating
@@ -122,6 +123,7 @@ function love.load()
 	widgets = {
 		gooi.newButton("BrushMenuButton","b\nr\nu\ns\nh\n"):setDirection("vertical"):onRelease(function(c) controlls:changeState("Brush") end),
 		gooi.newButton("TextMenuButton","t\ne\nx\nt"):setDirection("vertical"):onRelease(function(c) controlls:changeState("Text") end),
+        gooi.newButton("SaveMenuButton", "s\na\nv\ne"):setDirection("vertical"):onRelease(function(c) controlls:changeState("Save") end)
 	}
 	for i = 1, #widgets do
 		widgets[i].group = "controll_selector"
@@ -133,10 +135,11 @@ function love.load()
 		gooi.newLabel("fontSizeLabel","Font Size"):setOrientation("center"),
 		gooi.newSlider("fontSizeSlider"),
 		gooi.newButton("addTextBox","New Text Box"):setOrientation("center"):onRelease(
-			function() 
-				local font = love.graphics.newFont(gooi.get("fontSizeSlider").value * 30 + 12)
+			function()
+                local fontSize = gooi.get("fontSizeSlider").value
+				local font = love.graphics.newFont(fontSize * 30 + 12)
 				textBoxes.id = textBoxes.id + 1
-				local tb = textBox:new(textBoxes.id, love.graphics.getWidth()/2, love.graphics.getHeight()/2, 20*font:getWidth"M", "left", font)
+				local tb = textBox:new(textBoxes.id, love.graphics.getWidth()/2, love.graphics.getHeight()/2, 20*font:getWidth"M", "left", font, fontSize * 30)
 				textBoxes[#textBoxes + 1] = tb
 			end	
 			),
@@ -145,6 +148,15 @@ function love.load()
 		widgets[i].group = "Text_controlls"
 		controlls.textMenu:add(widgets[i])
 	end
+    controlls.saveMenu = gooi.newPanel("saveControlls", controlls.x, controlls.y, controlls.width, controlls.height, "grid 9x1", "Save_controlls")
+    widgets = {
+        gooi.newText("saveDirButton",""),
+        gooi.newButton("SaveButton", "Save"):setOrientation("center"):onRelease(function(c) local dir = gooi.get("saveDirButton",textBoxes ) end)
+    }
+    for i = 1,#widgets do
+        widgets[i].group = "Save_controlls"
+        controlls.saveMenu:add(widgets[i])
+    end
 	--[[
 	controlls.controllSelector.layout.debug = true
 	controlls.textMenu.layout.debug = true

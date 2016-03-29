@@ -1,13 +1,13 @@
 require './utf8'
 local textBox = {
-	new = function(self, id, x, y, wrap, align, font)
+	new = function(self, id, x, y, wrap, align, font, size)
 		local tb      = {}
 
 		tb.remove     = false
 		tb.id         = id
 		tb.font       = font or love.graphics.getFont()
 		tb.fontHeight = tb.font:getHeight()
-
+        tb.fontSize   = size
 		tb.x          = x or 0
 		tb.y          = y or 0
 		tb.width      = wrap or tb.font:getWidth("m") * 5   --Defaults to 5 em of space
