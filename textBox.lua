@@ -14,14 +14,14 @@ local textBox = {
 		tb.minHeight  = 5 * tb.fontHeight
 		tb.height     = tb.minHeight
 		tb.plainText  = text or ""
-
+		
 		tb.handleWidth  = 10 * love.window.getPixelScale()
 		tb.handleHeight = 10 * love.window.getPixelScale()
 
 		tb.isEditing    = false
-		--tb.enabled    = false
-		tb.hasFocus   = false
-		tb.isDragging = false
+		tb.movingCursor = false
+		tb.hasFocus   	= false
+		tb.isDragging 	= false
 
 		tb.wrap       =  tb.width
 		tb.align      = align or "left"
@@ -319,6 +319,8 @@ end
 
 textBox.meta.pressed  = function(self,id,x,y)
 	local caught = false
+	self.hasFocus = false
+	self.movingCursor = false
 	local mx = x or love.mouse.getX()
 	local my = y or love.mouse.getY()
 	if (mx > self.x and mx < self.x + self.width) and
@@ -330,11 +332,15 @@ textBox.meta.pressed  = function(self,id,x,y)
 		end
 	elseif (mx > self.x and mx < self.x + self.width) and (my > self.y and my < self.y + self.height) then
 		caught = true
+		self.hasFocus = true
+		self.movingCursor = true
 	end
 	return caught
 end
 
 textBox.meta.moved = function(self, x, y, dx, dy)
+	local mx = x or love.mouse.getX()
+	local my = y or love.mouse.getY()
 	if self.isDragging then
 		if self.touch then
 			self.touch.x = x
@@ -342,6 +348,35 @@ textBox.meta.moved = function(self, x, y, dx, dy)
 		end
 		self.x = self.x + dx
 		self.y = self.y + dy
+	end
+	print(self.hasFocus)
+	if self.movingCursor then
+		line, char = self:getTextCollide(mx,my)
+		if char == 0 and line == 0 then
+			self.trueIndex = 0
+			self.wrapIndex = 0
+		else
+			local lineDistance = line - self.line 
+			if lineDistance > 0 then
+				for i = 1, lineDistance do
+					self:moveIndexDown()
+				end
+			else
+				for i = 1, math.abs(lineDistance) do
+					self:moveIndexUp()
+				end
+			end
+			local charDistance = char - self.wrapIndex
+			if charDistance > 0 then
+				for i = 1, charDistance do
+					self:moveIndexRight()
+				end
+			else
+				for i = 1, math.abs(charDistance) do
+					self:moveIndexLeft()
+				end
+			end
+		end
 	end
 end
 
@@ -387,6 +422,7 @@ textBox.meta.released = function(self, x, y)
 		self.touch = nil
 	end
 	self.isDragging = false
+	self.movingCursor = false
 	return self.hasFocus
 end
 
