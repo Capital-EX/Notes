@@ -38,9 +38,9 @@ function love.load()
 			local mx, my = love.mouse.getX(), love.mouse.getY()
 			if self.isDown then
 				
-				print(#self.curLine)
+				
 				if self.isDown and self.oldmx ~= mx and self.oldmy ~= my then
-					print(mx,my)
+					
 					if #self.curLine == 0 then
 						love.graphics.setCanvas(paper)
 							love.graphics.setLineStyle("smooth")
@@ -61,7 +61,7 @@ function love.load()
 					end
 					love.graphics.setCanvas(paper)
 						love.graphics.setLineWidth(self.brushSize)
-						print(#self.curLine)
+						
 						love.graphics.line(self.curLine)
 						love.graphics.setColor(255,255,255)
 					love.graphics.setCanvas()
@@ -186,7 +186,7 @@ function love.update(dt)
 	for i = #textBoxes, 1, -1 do
 		textBoxes[i]:update(dt)
 		if textBoxes[i].remove then
-			print("removing text box ", i)
+			
 		end
 	end
 	
@@ -207,11 +207,10 @@ function love.keypressed(key,code)
 end
 ---[[
 function love.mousepressed(x,y,m,istouch)
-	--gooi.pressed(nil,x-controlls.x,y)
 	local isDragging = gooi.pressed()
 	for _, tb in ipairs(textBoxes) do
 		if not isDragging then
-			print("trying!")
+			
 			isDragging = tb:pressed()
 		else
 			tb.hasFocus = false
