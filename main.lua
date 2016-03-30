@@ -2,10 +2,14 @@ require 'gooi'
 tween = require 'tween.tween'
 textBox = require 'textBox'
 require 'save'
+require 'load'
 function love.load()
 	--[[
 		Draw Formating
 	]]
+	app ={
+		failedToLoad = false	
+	}
 	love.graphics.setBackgroundColor(232,255,255)
 	love.graphics.setLineStyle("smooth")
 	love.graphics.setLineJoin("bevel")
@@ -154,7 +158,11 @@ function love.load()
         gooi.newButton("SaveButton", "Save"):setOrientation("center"):onRelease(function(c) 
                 local dir = gooi.get("saveDirButton").text
                 save(dir, textBoxes, paper)
-            end)
+            end),
+		gooi.newButton("loadButton","Load"):setOrientation("center"):orRelease(function(c)
+				local dir = gooi.get("saveDirButton").text
+				loadNotes(dir)
+			end)
     }
     for i = 1,#widgets do
         widgets[i].group = "Save_controlls"
