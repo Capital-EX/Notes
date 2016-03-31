@@ -1,8 +1,8 @@
 require 'gooi'
-tween = require 'tween.tween'
-textBox = require 'textBox'
 require 'save'
 require 'load'
+tween = require 'tween.tween'
+textBox = require 'textBox'
 function love.load()
 	--[[
 		Draw Formating
@@ -23,13 +23,6 @@ function love.load()
 		Paper is the drawing surface
 	]]
 	paper = love.graphics.newCanvas()
-	--[[
-    textBoxes = {
-		id = 0
-	}
-    ]]
-	
-	
 	--[[
 		Brush Stuff
 	]]

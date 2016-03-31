@@ -29,7 +29,7 @@ save = function(dir, textBoxList, canvas)
 		dir = "unnamed"..i
 	end
     if not love.filesystem.exists(dir) then
-        print"Making dir!"
+        --print"Making dir!"
         love.filesystem.createDirectory(dir)
     end
     
@@ -46,5 +46,5 @@ save = function(dir, textBoxList, canvas)
 	
     textBoxFile:close()
     paperData = canvas:newImageData():encode("png",dir.."/".."paper.png")
-    print(saveDir, dir)
+    --print(saveDir, dir)
 end

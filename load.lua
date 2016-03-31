@@ -15,7 +15,7 @@ loadNotes = function(dir, paper, app)
             local _, _, wrap     = tb:find("@wrap{(.-)}")
             local _, _, fontSize = tb:find("@fontSize{(.-)}")
             local _, _, text     = tb:find("@text{(.-)}")
-            print(x, y, wrap, fontSize, text)
+            --print(x, y, wrap, fontSize, text)
             app.textBoxes[#app.textBoxes + 1] = textBox:new(app.textBoxes.id, text, tn(x), tn(y), tn(wrap), "left", love.graphics.newFont(tn(fontSize)), fontSize)
             app.textBoxes.id = app.textBoxes.id + 1
 		end
