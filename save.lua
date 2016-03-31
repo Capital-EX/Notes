@@ -40,8 +40,8 @@ save = function(dir, textBoxList, canvas)
        textBoxFile:write("") 
     end
     for k, textbox in ipairs(txt) do
-        textBoxFile:write(textbox)
-        textBoxFile:write('\n')
+        textBoxFile:write(textbox..'\n')
+        textBoxFile:flush()
     end
 	
     textBoxFile:close()
