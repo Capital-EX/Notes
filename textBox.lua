@@ -15,8 +15,12 @@ local textBox = {
 		tb.height     = tb.minHeight
 		tb.plainText  = text or ""
 		
-		tb.handleWidth  = 10 * love.window.getPixelScale()
-		tb.handleHeight = 10 * love.window.getPixelScale()
+		tb.deleteButtonX      = tb.wdith
+		tb.deleteButtonY      = tb.height
+		tb.deleteButtonWidth  = 10 * app.pixelScale
+		tb.deleteButtonHeight = 10 * app.pixelScale
+		
+		tb.remove     = false		
 
 		tb.isEditing    = false
 		tb.movingCursor = false
@@ -68,7 +72,9 @@ textBox.meta.draw = function(self)
 	if self.showCursor then
 		self:drawCursor()
 	end
-	love.graphics.rectangle("fill", self.width + self.x, self.height + self.y, self.handleWidth, self.handleHeight)
+	love.graphics.setColor(155,0,0)
+	love.graphics.rectangle("fill", self.deleteButtonX, self.deleteButtonY, self.deleteButtonWidth, self.deleteButtonHeight)
+	love.graphics.setColor(255,255,255)
 end
 
 textBox.meta.drawCursor = function(self)
@@ -95,6 +101,8 @@ textBox.meta.update = function(self, dt)
 		self.isEditing  = false
 		self.isDraging  = false
 	end
+	self.deleteButtonY = self.height + self.y
+	self.deleteButtonX = self.width + self.x
 end
 
 textBox.meta.updateCursor = function(self)
@@ -325,8 +333,12 @@ textBox.meta.pressed  = function(self,id,x,y)
 	self.movingCursor = false
 	local mx = x or love.mouse.getX()
 	local my = y or love.mouse.getY()
-	if (mx > self.x and mx < self.x + self.width) and
-	(my > self.y - 40 * love.window.getPixelScale() and my < self.y) then
+	if (mx > self.deleteButtonX and mx < self.deleteButtonX + self.deleteButtonWidth) and
+	(my > self.deleteButtonY and my < self.deleteButtonY + self.deleteButtonHeight) then
+		app.confirmDeleteText = true
+		
+	elseif (mx > self.x and mx < self.x + self.width) and
+	(my > self.y - 40 * app.pixelScale and my < self.y) then
 		self.isDragging = true
 		caught = true
 		if id and x and y then
