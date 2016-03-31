@@ -1,13 +1,13 @@
 require './utf8'
 local textBox = {
-	new = function(self, id, x, y, wrap, align, font, size)
+	new = function(self, id,text, x, y, wrap, align, font, fontSize)
 		local tb      = {}
 
 		tb.remove     = false
 		tb.id         = id
 		tb.font       = font or love.graphics.getFont()
 		tb.fontHeight = tb.font:getHeight()
-        tb.fontSize   = size
+        tb.fontSize   = fontSize
 		tb.x          = x or 0
 		tb.y          = y or 0
 		tb.width      = wrap or tb.font:getWidth("m") * 5   --Defaults to 5 em of space
@@ -61,6 +61,8 @@ textBox.meta.setText = function(self,text)
 end
 
 textBox.meta.draw = function(self)
+    love.graphics.setLineStyle("rough")
+    love.graphics.setLineWidth(1)
 	love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
 	love.graphics.draw(self.drawnText,self.x,self.y)
 	if self.showCursor then
