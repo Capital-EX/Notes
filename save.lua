@@ -1,6 +1,7 @@
 saveTextBoxes = function(textBoxList)
     local saved = {}
     for k, tb in ipairs(textBoxList) do
+        local savePos, saveText, saveWrap, saveFontSize
         savePos  = "@pos{"..tb.x..","..tb.y.."}"
         saveText = "@text{"..tb.plainText.."}"
         saveWrap = "@wrap{"..tb.wrap.."}"
@@ -9,15 +10,6 @@ saveTextBoxes = function(textBoxList)
     end
     return saved
 end
-
-saveLines = function(lineList)
-    local saved = {}
-    for k, line in ipairs(lineList) do
-        saved[#saved + 1] = "@line{"..table.concat(line,',').."}"
-    end
-    return saved
-end
-
 save = function(dir, textBoxList, canvas)
     saveDir = love.filesystem.getSaveDirectory()
     dir = dir:gsub("[|\\*?:<>\"/]","")
@@ -27,6 +19,7 @@ save = function(dir, textBoxList, canvas)
 			i = i + 1
 		end
 		dir = "unnamed"..i
+		app.activeFile = dir
 	end
     if not love.filesystem.exists(dir) then
         --print"Making dir!"
