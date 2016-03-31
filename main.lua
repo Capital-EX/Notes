@@ -7,8 +7,11 @@ function love.load()
 	--[[
 		Draw Formating
 	]]
-	app ={
-		failedToLoad = false	
+	app = {
+		failedToLoad  = false,
+        textBoxes = {
+            id = 0
+        } 
 	}
 	love.graphics.setBackgroundColor(232,255,255)
 	love.graphics.setLineStyle("smooth")
@@ -20,10 +23,12 @@ function love.load()
 		Paper is the drawing surface
 	]]
 	paper = love.graphics.newCanvas()
-	
-	textBoxes = {
+	--[[
+    textBoxes = {
 		id = 0
 	}
+    ]]
+	
 	
 	--[[
 		Brush Stuff
@@ -41,10 +46,8 @@ function love.load()
 		update    = function(self, dt)
 			local mx, my = love.mouse.getX(), love.mouse.getY()
 			if self.isDown then
-				
-				
-				if self.isDown and self.oldmx ~= mx and self.oldmy ~= my then
-					
+                print(self.oldmx,mx,self.oldmy,my)
+				if self.isDown and (self.oldmx ~= mx or self.oldmy ~= my) then
 					if #self.curLine == 0 then
 						love.graphics.setCanvas(paper)
 							love.graphics.setLineStyle("smooth")
@@ -137,14 +140,14 @@ function love.load()
 	controlls.textMenu = gooi.newPanel("textControlls", controlls.x, controlls.y, controlls.width, controlls.height, "grid 9x1", "Text_controlls")
 	widgets = {
 		gooi.newLabel("fontSizeLabel","Font Size"):setOrientation("center"),
-		gooi.newSlider("fontSizeSlider"),
+		gooi.newSpinner("fontSizeSpinner",nil,nil,nil,nil,12,12,30,1),
 		gooi.newButton("addTextBox","New Text Box"):setOrientation("center"):onRelease(
 			function()
-                local fontSize = gooi.get("fontSizeSlider").value
-				local font = love.graphics.newFont(fontSize * 30 + 12)
-				textBoxes.id = textBoxes.id + 1
-				local tb = textBox:new(textBoxes.id, love.graphics.getWidth()/2, love.graphics.getHeight()/2, 20*font:getWidth"M", "left", font, fontSize * 30)
-				textBoxes[#textBoxes + 1] = tb
+                local fontSize = gooi.get("fontSizeSpinner").value
+				local font = love.graphics.newFont(fontSize)
+				app.textBoxes.id = app.textBoxes.id + 1
+				local tb = textBox:new(app.textBoxes.id,"", love.graphics.getWidth()/2, love.graphics.getHeight()/2, 20*font:getWidth"M", "left", font, fontSize)
+				app.textBoxes[#app.textBoxes + 1] = tb
 			end	
 			),
 	}
@@ -152,22 +155,28 @@ function love.load()
 		widgets[i].group = "Text_controlls"
 		controlls.textMenu:add(widgets[i])
 	end
+    gooi.setGroupEnabled("Text_controlls", false)
+    gooi.setGroupVisible("Text_controlls", false)
+    
     controlls.saveMenu = gooi.newPanel("saveControlls", controlls.x, controlls.y, controlls.width, controlls.height, "grid 9x1", "Save_controlls")
     widgets = {
         gooi.newText("saveDirButton",""),
         gooi.newButton("SaveButton", "Save"):setOrientation("center"):onRelease(function(c) 
                 local dir = gooi.get("saveDirButton").text
-                save(dir, textBoxes, paper)
+                save(dir, app.textBoxes, paper)
             end),
-		gooi.newButton("loadButton","Load"):setOrientation("center"):orRelease(function(c)
+		gooi.newButton("loadButton","Load"):setOrientation("center"):onRelease(function(c)
+                print"Hello"
 				local dir = gooi.get("saveDirButton").text
-				loadNotes(dir)
+				loadNotes(dir, paper, app)
 			end)
     }
     for i = 1,#widgets do
         widgets[i].group = "Save_controlls"
         controlls.saveMenu:add(widgets[i])
     end
+    gooi.setGroupEnabled("Save_controlls",false)
+    gooi.setGroupVisible("Save_controlls",false)
 	--[[
 	controlls.controllSelector.layout.debug = true
 	controlls.textMenu.layout.debug = true
@@ -175,13 +184,14 @@ function love.load()
 end
 
 function love.draw()
-	love.graphics.print(love.timer.getFPS(),500,500)
+	
 	love.graphics.draw(paper,0,0)
 	love.graphics.setColor(100,100,100)
 	love.graphics.rectangle("fill",0,0,controlls.width,controlls.height)
 	love.graphics.setColor(0,0,0)
-	for i = 1, #textBoxes do
-		textBoxes[i]:draw()
+    love.graphics.print(love.timer.getFPS(),200,200)
+	for i = 1, #app.textBoxes do
+		app.textBoxes[i]:draw()
 	end
 	love.graphics.setColor(255,255,255)
 	gooi.draw(controlls.menuState.."_controlls")
@@ -191,9 +201,9 @@ end
 function love.update(dt)
 	gooi.update(dt)
 	brush:update(dt)
-	for i = #textBoxes, 1, -1 do
-		textBoxes[i]:update(dt)
-		if textBoxes[i].remove then
+	for i = #app.textBoxes, 1, -1 do
+		app.textBoxes[i]:update(dt)
+		if app.textBoxes[i].remove then
 			
 		end
 	end
@@ -201,14 +211,14 @@ function love.update(dt)
 end
 
 function love.textinput(text)
-	for _, tb in ipairs(textBoxes) do
+	for _, tb in ipairs(app.textBoxes) do
 		tb:textinput(text)
 	end
     gooi.textinput(text)
 end
 
 function love.keypressed(key,code)
-	for _, tb in ipairs(textBoxes) do
+	for _, tb in ipairs(app.textBoxes) do
 		tb:keypressed(key)
 	end
     gooi.keypressed(key, code)
@@ -216,7 +226,7 @@ end
 ---[[
 function love.mousepressed(x,y,m,istouch)
 	local isDragging = gooi.pressed()
-	for _, tb in ipairs(textBoxes) do
+	for _, tb in ipairs(app.textBoxes) do
 		if not isDragging then
 			
 			isDragging = tb:pressed()
@@ -234,7 +244,7 @@ function love.mousepressed(x,y,m,istouch)
 end
 
 function love.mousemoved(x,y,dx,dy)
-	for _, tb in ipairs(textBoxes) do
+	for _, tb in ipairs(app.textBoxes) do
 		tb:moved(x,y,dx,dy)
 	end
 end
@@ -272,7 +282,7 @@ function love.mousereleased(x,y)
 	brush.isDown = false
 	brush.curLine = {}
 	local mouseCaught = gooi.released()
-	for _, tb in ipairs(textBoxes) do
+	for _, tb in ipairs(app.textBoxes) do
 		if not mouseCaught then
 			mouseCaught = tb:released()
 		else
@@ -288,7 +298,7 @@ end
 --[[
 function love.touchpressed(id, x, y)
 	local isDragging = gooi.pressed(id, x, y)
-	for _, tb in ipairs(textBoxes) do
+	for _, tb in ipairs(app.textBoxes) do
 		if not isDragging then
 			isDragging = tb:pressed(id, x, y)
 		else
@@ -308,7 +318,7 @@ function love.touchmoved(id, x, y, dx, dy)
 	if brush.isDown and #brush.curLine >= 4 then
 		brush:moved(x,y,dx,dy)
 	end
-	for _, tb in ipairs(textBoxes) do
+	for _, tb in ipairs(app.textBoxes) do
 		tb:moved(x, y, dx, dy)
 	end
 end
@@ -317,7 +327,7 @@ function love.touchreleased(id,x,y)
 	brush.isDown = false
 	brush.curLine = {}
 	local touchCaught = gooi.released(id,x,y)
-	for _, tb in ipairs(textBoxes) do
+	for _, tb in ipairs(app.textBoxes) do
 		if not mouseCaught then
 			mouseCaught = tb:released(x, y)
 		else
