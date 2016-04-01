@@ -2,31 +2,33 @@ require './utf8'
 local textBox = {
 	new = function(self, id,text, x, y, wrap, align, font, fontSize)
 		local tb      = {}
-        
-		tb.remove             = false
-		tb.id                 = id
-		tb.font               = font or love.graphics.getFont()
-		tb.fontHeight         = tb.font:getHeight()
-        tb.fontSize           = fontSize
-		tb.x                  = x or 0
-		tb.y                  = y or 0
-		tb.width              = wrap or tb.font:getWidth("m") * 5   --Defaults to 5 em of space
-		tb.minHeight          = 5 * tb.fontHeight
-		tb.height             = tb.minHeight
-		tb.plainText          = text or ""
-        tb.color              = {255,255,255}
+
+		tb.remove     = false
+		tb.id         = id
+		tb.font       = font or love.graphics.getFont()
+		tb.fontHeight = tb.font:getHeight()
+        tb.fontSize   = fontSize
+		tb.x          = x or 0
+		tb.y          = y or 0
+		tb.width      = wrap or tb.font:getWidth("m") * 5   --Defaults to 5 em of space
+		tb.minHeight  = 5 * tb.fontHeight
+		tb.height     = tb.minHeight
+		tb.plainText  = text or ""
+		
 		tb.deleteButtonX      = tb.wdith
 		tb.deleteButtonY      = tb.height
 		tb.deleteButtonWidth  = 10 * app.pixelScale
 		tb.deleteButtonHeight = 10 * app.pixelScale
-		tb.remove             = false		
-		tb.isEditing          = false
-		tb.movingCursor       = false
-		tb.hasFocus   	      = false
-		tb.isDragging 	      = false
-		tb.wrap               =  tb.width
-		tb.align              = align or "left"
-        
+		
+		tb.remove     = false		
+
+		tb.isEditing    = false
+		tb.movingCursor = false
+		tb.hasFocus   	= false
+		tb.isDragging 	= false
+
+		tb.wrap       =  tb.width
+		tb.align      = align or "left"
 		tb.padding    = {
 			top    = 0,
 			right  = 0,
@@ -36,18 +38,20 @@ local textBox = {
 
 		local _, wraps = tb.font:getWrap(tb.plainText,tb.wrap)
 
-		tb.drawnText  = love.graphics.newText(tb.font)
+		tb.drawnText   = love.graphics.newText(tb.font)
 		tb.drawnText:addf(tb.plainText, tb.wrap, tb.align,0,0)
-        
-		tb.trueIndex  = tb.plainText:len()                       --Where we are in the full string of plain text
-		tb.wrapIndex  = #wraps == 0 and 0 or wraps[#wraps]:len() --Where we are in the current line of wrapped text
-		tb.line       = 1
-		tb.cursorX    = tb.font:getWrap(tb.plainText, tb.wrap)
-		tb.cursorY    = tb.fontHeight * math.max(tb.line,1)
-		tb.showCursor = true
-		tb.blinkDelay = 0.5
-		tb.blinkTimer = 0
-        
+
+		tb.trueIndex   = tb.plainText:len()                       --Where we are in the full string of plain text
+		tb.wrapIndex   = #wraps == 0 and 0 or wraps[#wraps]:len() --Where we are in the current line of wrapped text
+		tb.line        = 1
+
+		tb.cursorX         = tb.font:getWrap(tb.plainText, tb.wrap)
+		tb.cursorY         = tb.fontHeight * math.max(tb.line,1)
+
+		tb.showCursor      = true
+		tb.blinkDelay      = 0.5
+		tb.blinkTimer      = 0
+
 		return setmetatable(tb,{__index = self.meta})
 	end
 
@@ -61,7 +65,6 @@ textBox.meta.setText = function(self,text)
 end
 
 textBox.meta.draw = function(self)
-    love.graphics.setColor(0,0,0)
     love.graphics.setLineStyle("rough")
     love.graphics.setLineWidth(1)
 	love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
@@ -71,6 +74,7 @@ textBox.meta.draw = function(self)
 	end
 	love.graphics.setColor(155,0,0)
 	love.graphics.rectangle("fill", self.deleteButtonX, self.deleteButtonY, self.deleteButtonWidth, self.deleteButtonHeight)
+	love.graphics.setColor(255,255,255)
 end
 
 textBox.meta.drawCursor = function(self)
@@ -237,8 +241,11 @@ textBox.meta.moveIndexUp = function(self)
 	local _, textWrap    = self.font:getWrap(plainText,self.wrap)
 	local thisLine       = textWrap[self.line] or ""
 	local nextLine       = textWrap[self.line - 1] or ""
+
 	local nextLineLen    = nextLine:len()
+
 	local wrapIndex      = self.wrapIndex
+
 	local moveTo         = self.roundToInt(nextLineLen*self.cursorX/self.font:getWidth(nextLine))
 
 	if tostring(moveTo) == "nan" then  -- If moveTo is not a number then
@@ -328,8 +335,8 @@ textBox.meta.pressed  = function(self,id,x,y)
 	local my = y or love.mouse.getY()
 	if (mx > self.deleteButtonX and mx < self.deleteButtonX + self.deleteButtonWidth) and
 	(my > self.deleteButtonY and my < self.deleteButtonY + self.deleteButtonHeight) then
-		self.remove = true
-        caught = true
+		app.confirmDeleteText = true
+		
 	elseif (mx > self.x and mx < self.x + self.width) and
 	(my > self.y - 40 * app.pixelScale and my < self.y) then
 		self.isDragging = true
