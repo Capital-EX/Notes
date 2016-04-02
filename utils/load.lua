@@ -1,7 +1,8 @@
 loadNotes = function(dir, paper, app)
 	local textFile, err = love.filesystem.newFile(dir.."/text.txt",'r')
 	if err then
-		app.failedToLoad = true	
+        gooi.get("alert_label").text = err
+        popups:setState("alert")
 	else
         local textData, imgFile
         local tn = tonumber
