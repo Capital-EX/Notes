@@ -299,8 +299,9 @@ textBox.meta.onBackspace = function(self)
 			 self:moveIndexLeft()
             end
         elseif oldWrap[self.line - 1]:len() < newWrap[self.line - 1]:len() then
+            local shifted = string.utf8sub(oldWrap[self.line], 0, self.wrapIndex - 1)
             self.line = self.line - 1
-            self.wrapIndex = newWrap[self.line]:len()
+            self.wrapIndex = oldWrap[self.line]:len() + shifted:len()
             self.trueIndex = self.trueIndex - 1
         else
             self:moveIndexLeft()
