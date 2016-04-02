@@ -144,7 +144,9 @@ function love.load()
                     local done = self.tweens[i]:update(dt)
                     if done then
                         if self.tweens[i].subject.rebuild then
-                            self.tweens[i].subject:rebuild()
+                            if self.tweens[i].subject.type == "spinner" then
+                                self.tweens[i].subject:rebuild()
+                            end
                         end
                         table.remove(self.tweens,i)
                     end
