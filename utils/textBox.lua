@@ -324,20 +324,20 @@ textBox.meta.pressed  = function(self,id,x,y)
 	local caught = false
 	self.hasFocus = false
 	self.movingCursor = false
-	local mx = x or love.mouse.getX()
-	local my = y or love.mouse.getY()
-	if (mx > self.deleteButtonX and mx < self.deleteButtonX + self.deleteButtonWidth) and
-	(my > self.deleteButtonY and my < self.deleteButtonY + self.deleteButtonHeight) then
+	local x = x or love.mouse.getX()
+	local y = y or love.mouse.getY()
+	if (x > self.deleteButtonX and x < self.deleteButtonX + self.deleteButtonWidth) and
+	(y > self.deleteButtonY and y < self.deleteButtonY + self.deleteButtonHeight) then
 		self.remove = true
         caught = true
-	elseif (mx > self.x and mx < self.x + self.width) and
-	(my > self.y - 40 * app.pixelScale and my < self.y) then
+	elseif (x > self.x and x < self.x + self.width) and
+	(y > self.y - 40 * app.pixelScale and y < self.y) then
 		self.isDragging = true
 		caught = true
 		if id and x and y then
 			self.touch = {id=id,x=x,y=y}
 		end
-	elseif (mx > self.x and mx < self.x + self.width) and (my > self.y and my < self.y + self.height) then
+	elseif (x > self.x and x < self.x + self.width) and (y > self.y and y < self.y + self.height) then
 		caught = true
 		self.hasFocus = true
 		self.movingCursor = true
@@ -346,8 +346,8 @@ textBox.meta.pressed  = function(self,id,x,y)
 end
 
 textBox.meta.moved = function(self, x, y, dx, dy)
-	local mx = x or love.mouse.getX()
-	local my = y or love.mouse.getY()
+	local x = x or love.mouse.getX()
+	local y = y or love.mouse.getY()
 	if self.isDragging then
 		if self.touch then
 			self.touch.x = x
@@ -358,7 +358,7 @@ textBox.meta.moved = function(self, x, y, dx, dy)
 	end
 	print(self.hasFocus)
 	if self.movingCursor then
-		line, char = self:getTextCollide(mx,my)
+		line, char = self:getTextCollide(x,y)
 		if char == 0 and line == 0 then
 			self.trueIndex = 0
 			self.wrapIndex = 0
@@ -388,15 +388,15 @@ textBox.meta.moved = function(self, x, y, dx, dy)
 end
 
 textBox.meta.released = function(self, x, y)
-	local mx = x or love.mouse.getX()
-	local my = y or love.mouse.getY()
-	if (mx > self.x and mx < self.x + self.width) and (my > self.y and my < self.y + self.height) then
+	local x = x or love.mouse.getX()
+	local y = y or love.mouse.getY()
+	if (x > self.x and x < self.x + self.width) and (y > self.y and y < self.y + self.height) then
 		love.keyboard.setTextInput(true)
 		self.hasFocus = true
 		self.isEditing = true
 		self.showCursor = true
 		local line, char
-		line, char = self:getTextCollide(mx,my)
+		line, char = self:getTextCollide(x,y)
 		if char == 0 and line == 0 then
 			self.trueIndex = 0
 			self.wrapIndex = 0
