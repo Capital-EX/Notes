@@ -12,7 +12,7 @@ saveTextBoxes = function(textBoxList)
 end
 save = function(dir, textBoxList, canvas)
     saveDir = love.filesystem.getSaveDirectory()
-    dir = dir:gsub("[|\\*?:<>\"/]","")
+    dir = dir:gsub("[|\\*?:<>\"/]","-")
 	if dir == "" then
 		local i = 0
 		while love.filesystem.exists("unnamed"..i) do
@@ -22,7 +22,6 @@ save = function(dir, textBoxList, canvas)
 		app.activeFile = dir
 	end
     if not love.filesystem.exists(dir) then
-        --print"Making dir!"
         love.filesystem.createDirectory(dir)
     end
     
@@ -39,5 +38,4 @@ save = function(dir, textBoxList, canvas)
 	
     textBoxFile:close()
     paperData = canvas:newImageData():encode("png",dir.."/".."paper.png")
-    --print(saveDir, dir)
 end
