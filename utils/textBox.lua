@@ -28,12 +28,19 @@ local textBox = {
 		tb.align              = align or "left"
         
 		tb.padding    = {
-			top    = 0,
-			right  = 0,
-			bottom = 0,
-			left   = 0,
+			top    = 4 * app.pixelScale,
+			right  = 4 * app.pixelScale,
+			bottom = 4 * app.pixelScale,
+			left   = 4 * app.pixelScale,
 		}
-
+        
+        tb.bgColor = {
+            249, 224, 124, 186
+        }
+        tb.dragZoneColor = {
+            226, 182, 114, 217
+        }
+        
 		local _, wraps = tb.font:getWrap(tb.plainText,tb.wrap)
 
 		tb.drawnText  = love.graphics.newText(tb.font)
@@ -61,15 +68,17 @@ textBox.meta.setText = function(self,text)
 end
 
 textBox.meta.draw = function(self)
+    love.graphics.setBlendMode("alpha")
+    love.graphics.setColor(self.bgColor)
+	love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+    love.graphics.setColor(self.dragZoneColor)
+    love.graphics.rectangle("fill", self.x, self.y - 20, self.width, 20)
     love.graphics.setColor(0,0,0)
-    love.graphics.setLineStyle("rough")
-    love.graphics.setLineWidth(1)
-	love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
 	love.graphics.draw(self.drawnText,self.x,self.y)
 	if self.showCursor then
 		self:drawCursor()
 	end
-	love.graphics.setColor(155,0,0)
+	love.graphics.setColor(200,100,100)
 	love.graphics.rectangle("fill", self.deleteButtonX, self.deleteButtonY, self.deleteButtonWidth, self.deleteButtonHeight)
 end
 
@@ -331,7 +340,7 @@ textBox.meta.pressed  = function(self,id,x,y)
 		self.remove = true
         caught = true
 	elseif (x > self.x and x < self.x + self.width) and
-	(y > self.y - 40 * app.pixelScale and y < self.y) then
+	(y > (self.y - 20 * app.pixelScale) and y < self.y) then
 		self.isDragging = true
 		caught = true
 		if id and x and y then
