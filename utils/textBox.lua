@@ -223,7 +223,7 @@ textBox.meta.moveIndexDown = function(self)
 
 	if moveTo > nextLineLen then      -- If moveTo is past the line length
 		moveTo = nextLineLen          -- |::set MoveTo equal to line length
-	end
+	end 
 
 	local thisLineOffSet = string.utf8sub(thisLine, wrapIndex + 1, -1):len()                  --Find the off set within current line; ex: [(xx)|xxx] => offset of 2
 	local nextLineOffSet = string.utf8sub(nextLine, 0, moveTo == "nan" and 1 or moveTo):len() --Find the off set within next line; ex: [xx|(xxx)] => offset of 3
@@ -291,12 +291,20 @@ textBox.meta.onBackspace = function(self)
 	self.plainText    = table.concat{textBehind,textAhead}                                       --Update the plainText string
 	local _, newWrap  = self.font:getWrap(self.plainText, self.wrap)
 	local _, wrapBehind = self.font:getWrap(textBehind, self.wrap)
-	if removedChar == ' ' and oldWrap[self.line - 1] and newWrap[self.line - 1] then
-		if oldWrap[self.line - 1]:len() > newWrap[self.line - 1]:len() then
-			self.wrapIndex =  oldWrap[self.line - 1]:len() - newWrap[self.line - 1]:len()
-		else
-			self:moveIndexLeft()
-		end
+	if oldWrap[self.line - 1] and newWrap[self.line - 1] then
+        if removedChar == ' ' then
+            if oldWrap[self.line - 1]:len() > newWrap[self.line - 1]:len() then
+			 self.wrapIndex =  oldWrap[self.line - 1]:len() - newWrap[self.line - 1]:len() - 1
+            else
+			 self:moveIndexLeft()
+            end
+        elseif oldWrap[self.line - 1]:len() < newWrap[self.line - 1]:len() then
+            self.line = self.line - 1
+            self.wrapIndex = newWrap[self.line]:len()
+            self.trueIndex = self.trueIndex - 1
+        else
+            self:moveIndexLeft()
+        end
 	else
 		self:moveIndexLeft()
 	end
