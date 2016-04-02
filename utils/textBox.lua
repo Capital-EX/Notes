@@ -294,7 +294,8 @@ textBox.meta.onBackspace = function(self)
 	if oldWrap[self.line - 1] and newWrap[self.line - 1] then
         if removedChar == ' ' then
             if oldWrap[self.line - 1]:len() > newWrap[self.line - 1]:len() then
-			 self.wrapIndex =  oldWrap[self.line - 1]:len() - newWrap[self.line - 1]:len() - 1
+                self.wrapIndex =  oldWrap[self.line - 1]:len() - newWrap[self.line - 1]:len() - 1
+                self.trueIndex = self.trueIndex - 1    
             else
 			 self:moveIndexLeft()
             end
