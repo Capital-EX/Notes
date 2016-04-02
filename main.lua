@@ -17,9 +17,10 @@ function love.load()
         textBoxes = {
             id = 0
         },
-        
+        paper = love.graphics.newCanvas(),
         WHITE   = {255,255,255}
     }
+    
     
     --[[
     ===========================
@@ -36,6 +37,7 @@ function love.load()
 
     winW, winH  = love.graphics.getWidth(), love.graphics.getHeight()
     
+    
     --[[
     ===========================
     |                         |
@@ -44,6 +46,7 @@ function love.load()
     ===========================
     ]]
     paper = love.graphics.newCanvas()
+    
     
     --[[
     ===========================
@@ -68,7 +71,7 @@ function love.load()
                 print(self.oldmx,mx,self.oldmy,my)
                 if self.isDown and (self.oldmx ~= mx or self.oldmy ~= my) then
                     if #self.curLine == 0 then
-                        love.graphics.setCanvas(paper)
+                        love.graphics.setCanvas(app.paper)
                             love.graphics.setLineStyle("smooth")
                             love.graphics.setColor(brush.color)
                             love.graphics.circle('fill',mx,my,math.ceil(brush.brushSize/2))
@@ -85,9 +88,8 @@ function love.load()
                     else
                         love.graphics.setColor(self.color)
                     end
-                    love.graphics.setCanvas(paper)
+                    love.graphics.setCanvas(app.paper)
                         love.graphics.setLineWidth(self.brushSize)
-
                         love.graphics.line(self.curLine)
                         love.graphics.setColor(255,255,255)
                     love.graphics.setCanvas()
@@ -107,6 +109,7 @@ function love.load()
 
     }
     
+    
     --[[
     ===========================
     |                         |
@@ -117,13 +120,14 @@ function love.load()
     controls = {
         width       = winW*0.25,
         height      = winH*0.5,
-        x           = 0,
+        x           = -winW*0.25,
         y           = 0,
-        isShown     = true,
+        isShown     = false,
         tweenState  = "",
-        menuStates  = {"Brush","Text","Save"},
-        state       = "Brush",
+        menuStates  = {"brush","text","save"},
+        state       = "brush",
         changeState = function(self, state)
+            if state == "" then self.state = state; return end
             gooi.setGroupEnabled(self.state.."_controls", false)
             gooi.setGroupVisible(self.state.."_controls", false)
             self.state = state
@@ -139,6 +143,9 @@ function love.load()
                 for i = #self.tweens, 1, -1 do
                     local done = self.tweens[i]:update(dt)
                     if done then
+                        if self.tweens[i].subject.rebuild then
+                            self.tweens[i].subject:rebuild()
+                        end
                         table.remove(self.tweens,i)
                     end
                     if #self.tweens == 0 then
@@ -156,11 +163,11 @@ function love.load()
             if self.state ~= "" then
                 gooi.draw(self.state.."_controls")
             end
-            gooi.draw("control_selector_sidebar")
+            gooi.draw("control_sidebar")
         end,
         
         hide = function(self)
-            local sideBar   = gooi.getByGroup("control_selector_sidebar")
+            local sideBar   = gooi.getByGroup("control_sidebar")
             self.tweens     = {}
             self.tweenState = "Hide"
             for i = 1, #self.menuStates do
@@ -179,12 +186,12 @@ function love.load()
             for i = 1, #sideBar do
                 self.tweens[#self.tweens + 1] = tween.new(0.25, sideBar[i], {x = -(self.width - sideBar[i].x)}, "outCubic")
             end
-            
+            gooi.get("CloseMenuButton").text = ">"
             self.tweens[#self.tweens + 1] = tween.new(0.25, self, {x=-self.width}, "outCubic")
         end,
         
         show  = function(self)
-            local sideBar = gooi.getByGroup("control_selector_sidebar")
+            local sideBar = gooi.getByGroup("control_sidebar")
             self.tweens = {}
             self.tweenState = "Show"
             for i = 1, #self.menuStates do
@@ -196,6 +203,7 @@ function love.load()
                 else
                     for i = 1, #group do
                         group[i].x = group[i].x + self.width
+                        if group[i].rebuild then group[i]:rebuild() end
                     end
                 end                
             end
@@ -203,10 +211,11 @@ function love.load()
             for i = 1, #sideBar do
                 self.tweens[#self.tweens + 1] = tween.new(0.25, sideBar[i], {x = sideBar[i].x + self.width}, "outCubic")
             end
-            
+            gooi.get("CloseMenuButton").text = "<"
             self.tweens[#self.tweens + 1] = tween.new(0.25, self, {x = 0}, "outCubic")
         end
     }
+    
     
     --[[
     ----------------------------
@@ -216,7 +225,7 @@ function love.load()
     ----------------------------
     ]]
     
-    controls.textMenu = gooi.newPanel("textcontrols", controls.x, controls.y, controls.width, controls.height, "grid 9x1", "Text_controls")
+    controls.textMenu = gooi.newPanel("textcontrols", controls.x, controls.y, controls.width, controls.height, "grid 9x1", "text_controls")
     widgets = {
         gooi.newLabel("fontSizeLabel","Font Size"):setOrientation("center"),
         gooi.newSpinner("fontSizeSpinner",nil,nil,nil,nil,12,12,30,1),
@@ -231,11 +240,11 @@ function love.load()
     }
     
     for i = 1, #widgets do
-        widgets[i].group = "Text_controls"
+        widgets[i].group = "text_controls"
         controls.textMenu:add(widgets[i])
     end
-    gooi.setGroupEnabled("Text_controls", false)
-    gooi.setGroupVisible("Text_controls", false)
+    gooi.setGroupEnabled("text_controls", false)
+    gooi.setGroupVisible("text_controls", false)
     
     --[[
     ----------------------------
@@ -244,7 +253,7 @@ function love.load()
     |                          |
     ----------------------------
     ]]
-    controls.brushMenu = gooi.newPanel("brushcontrols",controls.x,controls.y,controls.width,controls.height, "grid 9x1", "Brush_controls")
+    controls.brushMenu = gooi.newPanel("brushcontrols",controls.x,controls.y,controls.width,controls.height, "grid 9x1", "brush_controls")
     local widgets = {
         gooi.newLabel("redLabel", "Red"):setOrientation("left"),
         gooi.newSlider("redSlider"):setValue(2),
@@ -257,7 +266,7 @@ function love.load()
         gooi.newCheck("toggleErase","Erase Mode"),
     }
     for i = 1, #widgets do
-        widgets[i].group = "Brush_controls"
+        widgets[i].group = "brush_controls"
         controls.brushMenu:add(widgets[i])
     end
     
@@ -268,30 +277,39 @@ function love.load()
     |                           |
     -----------------------------
     ]]
-    controls.saveMenu = gooi.newPanel("savecontrols", controls.x, controls.y, controls.width, controls.height, "grid 9x1", "Save_controls")
+    controls.saveMenu = gooi.newPanel("savecontrols", controls.x, controls.y, controls.width, controls.height, "grid 9x1", "save_controls")
     widgets = {
         gooi.newText("saveDirText",""),
         gooi.newButton("SaveButton", "Save"):setOrientation("center"):onRelease(function(c)      
                 local dir = gooi.get("saveDirText").text
                 if love.filesystem.exists(dir) and not app.activeFile ~= dir then
-                    popups:changeState"confirm_overwrite"
+                    popups:setState"confirm_overwrite"
                 else
                     gooi.get("saveDirText").text = ""
-                    save(dir, app.textBoxes, paper)
+                    save(dir, app.textBoxes, app.paper)
                 end
             end),
         gooi.newButton("loadButton","Load"):setOrientation("center"):onRelease(function(c)
                 print"Hello"
                 local dir = gooi.get("saveDirText").text
-                loadNotes(dir, paper, app)
+                loadNotes(dir, app.paper, app)
             end)
     }
+    do 
+        local clear
+        clear = gooi.newButton("clear_button", "clear all")
+            :onRelease(function(c)
+                popups:setState "confirm_paper_clear"
+            end)
+        clear.group = "save_controls"
+        controls.saveMenu:add(clear, "8,1")
+    end
     for i = 1,#widgets do
-        widgets[i].group = "Save_controls"
+        widgets[i].group = "save_controls"
         controls.saveMenu:add(widgets[i])
     end
-    gooi.setGroupEnabled("Save_controls",false)
-    gooi.setGroupVisible("Save_controls",false)
+    gooi.setGroupEnabled("save_controls",false)
+    gooi.setGroupVisible("save_controls",false)
     
     --[[
     -------------------------------
@@ -301,39 +319,37 @@ function love.load()
     -------------------------------
     ]]
     local brushMenuButton, textMenuButton, saveMenuButton, closeMenuButton
-    controls.controlSelector = gooi.newPanel("controlSelector",controls.x+controls.width,controls.y,controls.width/4,controls.height, "grid 7x2", "control_selector_sidebar")
+    controls.controlSelector = gooi.newPanel("controlSelector",controls.x+controls.width,controls.y,controls.width/4,controls.height, "grid 7x1", "control_sidebar")
         :setRowspan(1,1,2)
         :setRowspan(3,1,2)
         :setRowspan(5,1,2)
     brushMenuButton = gooi.newButton("BrushMenuButton","b\nr\nu\ns\nh\n")
         :setDirection("vertical")
-        :onRelease(function(c) controls:changeState("Brush") end)
-    brushMenuButton.group = "control_selector_sidebar"
+        :onRelease(function(c) controls:changeState("brush") end)
+    brushMenuButton.group = "control_sidebar"
     
     textMenuButton = gooi.newButton("TextMenuButton","t\ne\nx\nt")
         :setDirection("vertical")
-        :onRelease(function(c) controls:changeState("Text") end)
-    textMenuButton.group = "control_selector_sidebar"
+        :onRelease(function(c) controls:changeState("text") end)
+    textMenuButton.group = "control_sidebar"
     
     saveMenuButton = gooi.newButton("SaveMenuButton","s\na\nv\ne")
         :setDirection("vertical")
-        :onRelease(function(c) controls:changeState("Save") end)
-    saveMenuButton.group = "control_selector_sidebar"
+        :onRelease(function(c) controls:changeState("save") end)
+    saveMenuButton.group = "control_sidebar"
     
-    toggleMenuButton = gooi.newButton("CloseMenuButton","<")
+    toggleMenuButton = gooi.newButton("CloseMenuButton",">")
         :setDirection("veritcal")
         :onRelease(function(c)
             if controls.isShown then
-                c.text = ">"
                 controls.isShown = false
                 controls:hide()
             else
-                c.text = "<"
                 controls.isShown = true
                 controls:show()
             end
         end)
-    toggleMenuButton.group = "control_selector_sidebar"
+    toggleMenuButton.group = "control_sidebar"
     controls.controlSelector:add(brushMenuButton, "1,1")
     controls.controlSelector:add(textMenuButton, "3,1")
     controls.controlSelector:add(saveMenuButton, "5,1")
@@ -353,28 +369,41 @@ function love.load()
     popups.y           = app.height/2 - popups.height/2
     popups.isShown     = false
     popups.state       = ""
-    popups.changeState = function(self, state)
+    popups.alertText   = ""
+    popups.setState = function(self, state)
         print(state)
         if state == "" then
-            gooi:setGroupEnabled(self.state.."_popup", false)
-            gooi:setGroupVisible(self.state.."_popup", false)
+            gooi.setGroupEnabled(self.state.."_popup", false)
+            gooi.setGroupVisible(self.state.."_popup", false)
             self.state = state
             self.isShown = false
         elseif self.state == "" then
             self.state =  state
-            gooi:setGroupEnabled(self.state.."_popup", true)
-            gooi:setGroupVisible(self.state.."_popup", true)
+            print("enabling!")
+            gooi.setGroupEnabled(self.state.."_popup", true)
+            gooi.setGroupVisible(self.state.."_popup", true)
             self.isShown = true
         else
-            gooi:setGroupEnabled(self.state.."_popup", false)
-            gooi:setGroupVisible(self.state.."_popup", false)
+            gooi.setGroupEnabled(self.state.."_popup", false)
+            gooi.setGroupVisible(self.state.."_popup", false)
             self.state = state
-            gooi:setGroupEnabled(self.state.."_popup", true)
-            gooi:setGroupVisible(self.state.."_popup", true)
+            gooi.setGroupEnabled(self.state.."_popup", true)
+            gooi.setGroupVisible(self.state.."_popup", true)
             self.isShown = true
         end
+        if popups.isShown then
+            gooi.setGroupEnabled("brush_controls", false)
+            gooi.setGroupEnabled("text_controls", false)
+            gooi.setGroupEnabled("save_controls", false)
+            gooi.setGroupEnabled("control_sidebar", false)
+        else
+            gooi.setGroupEnabled("brush_controls", true)
+            gooi.setGroupEnabled("text_controls", true)
+            gooi.setGroupEnabled("save_controls", true)
+            gooi.setGroupEnabled("control_sidebar", true)
+        end
     end
-    popups.draw     = function(self)
+    popups.draw = function(self)
         if self.isShown and self.state ~= "" then
             love.graphics.setColor(50, 50, 50, 150)
             love.graphics.rectangle("fill",0,0,app.width,app.height)
@@ -384,6 +413,34 @@ function love.load()
             gooi.draw(self.state.."_popup")
         end
     end
+    
+    --[[
+    ------------------------------
+    |                            |
+    |      Alert     Popup       |
+    |                            |
+    ------------------------------
+    ]]
+    do
+        local label, okay
+        popups.alert = gooi.newPanel("alert", popups.x, popups.y, popups.width, popups.height, "grid 5x5", "alert_popup")
+            :setRowspan(1, 1, 4)
+            :setColspan(1, 1, 5)
+        label = gooi.newLabel("alert_label", popups.alertText)
+            :setOrientation("center")
+        label.group = "alert_popup"
+        
+        okay  = gooi.newButton("alert_okay", "Okay")
+            :onRelease(function(c)
+                popups:setState("")
+                gooi.get("alert_label").text = ""
+            end)
+        okay.group = "alert_popup"
+        popups.alert:add(okay, "5,3")
+        popups.alert:add(label, "1,1")
+        gooi.setGroupEnabled("alert_popup", false)
+    end
+    
     --[[
     ------------------------------
     |                            |
@@ -393,7 +450,7 @@ function love.load()
     ]]
     do
         local yes, no, label
-        popups.confirmClearPaper   = gooi.newPanel("confirm_paper_clear", popups.x, popups.y, popups.width, popups.height, "grid 5x4", "confirm_paper_clear_popup")
+        popups.confirmClearPaper = gooi.newPanel("confirm_paper_clear", popups.x, popups.y, popups.width, popups.height, "grid 5x4", "confirm_paper_clear_popup")
             :setRowspan(1, 1, 4)
             :setColspan(1, 1, 4)
         label = gooi.newLabel("confirm_paper_clear_label", "Are you sure you want to delete these notes?")
@@ -401,19 +458,26 @@ function love.load()
         label.group = "confirm_paper_clear_popup"
         popups.confirmClearPaper:add(label)
 
-        yes = gooi.newButton("confirm_delete_notesconfirm_paper_clear_yes", "Yes"):onRelease(function(c)
-                --Code for button here
-                popups:changeState("")
+        yes = gooi.newButton("confirm_delete_notesconfirm_paper_clear_yes", "Yes")
+            :onRelease(function(c)
+                app.textBoxes = {}
+                love.graphics.setCanvas(app.paper)
+                    love.graphics.clear()
+                love.graphics.setCanvas()
+                popups:setState("")
             end)
         yes.group = "confirm_paper_clear_popup"
         popups.confirmClearPaper:add(yes,"5,1")
         
-        no = gooi.newButton("confirm_paper_clear_no", "No"):onRelease(function(c)
-                popups:changeState("")
+        no = gooi.newButton("confirm_paper_clear_no", "No")
+            :onRelease(function(c)
+                popups:setState("")
             end)
         no.group = "confirm_paper_clear_popup"
         popups.confirmClearPaper:add(no, "5,4")
-    end    
+        gooi.setGroupEnabled("confirm_paper_clear_popup", false)
+    end
+    
     --[[
     -------------------------------
     |                             |
@@ -423,7 +487,7 @@ function love.load()
     ]]
     do
         local yes, no, label
-        popups.confirmOverWrite     = gooi.newPanel("confirm_overwrite", popups.x, popups.y, popups.width, popups.height, "grid 5x4", "confirm_overwrite_popup")
+        popups.confirmOverWrite = gooi.newPanel("confirm_overwrite", popups.x, popups.y, popups.width, popups.height, "grid 5x4", "confirm_overwrite_popup")
             :setRowspan(1, 1, 4)
             :setColspan(1, 1, 4)
         label = gooi.newLabel("confirm_overwrite_label", "Are you sure you want to overwrite these notes?")
@@ -431,21 +495,61 @@ function love.load()
         label.group = "confirm_overwrite_popup"
         popups.confirmOverWrite:add(label)
 
-        yes = gooi.newButton("confirm_overwrite_yes", "Yes"):onRelease(function(c)
-                    local dir = gooi.get("saveDirText").text
-                    gooi.get("saveDirText").text = ""
-                    save(dir, app.textBoxes, paper)
-                    popups:changeState("")
-                end)
+        yes = gooi.newButton("confirm_overwrite_yes", "Yes")
+            :onRelease(function(c)
+                local dir = gooi.get("saveDirText").text
+                gooi.get("saveDirText").text = ""
+                save(dir, app.textBoxes, app.paper)
+                popups:setState("")
+            end)
         yes.group = "confirm_overwrite_popup"
         popups.confirmOverWrite:add(yes,"5,1")
 
-        no = gooi.newButton("confirm_overwrite_no", "No"):onRelease(function(c)
-                    popups:changeState("")
-                end)
+        no = gooi.newButton("confirm_overwrite_no", "No")
+            :onRelease(function(c)
+                popups:setState("")
+            end)
         no.group = "confirm_overwrite_popup"
         popups.confirmOverWrite:add(no, "5,4")
-    end    
+        gooi.setGroupEnabled("confirm_overwrite_popup", false)
+    end
+    
+     --[[
+    -------------------------------
+    |                             |
+    |       Save as Unnamed       |
+    |                             |
+    -------------------------------
+    ]]
+    do
+        local yes, no, label
+        popups.confirmOverWrite = gooi.newPanel("save_as_unnamed", popups.x, popups.y, popups.width, popups.height, "grid 5x4", "save_as_unnamed_popup")
+            :setRowspan(1, 1, 4)
+            :setColspan(1, 1, 4)
+        label = gooi.newLabel("save_as_unnamed_label", "Are you sure you want to save unnamed notes?")
+            :setOrientation("center")
+        label.group = "save_as_unnamed_popup"
+        popups.confirmOverWrite:add(label)
+
+        yes = gooi.newButton("save_as_unnamed_yes", "Yes")
+            :onRelease(function(c)
+                local dir = gooi.get("saveDirText").text
+                gooi.get("saveDirText").text = ""
+                save(dir, app.textBoxes, app.paper)
+                popups:setState("")
+            end)
+        yes.group = "save_as_unnamed_popup"
+        popups.confirmOverWrite:add(yes,"5,1")
+
+        no = gooi.newButton("save_as_unnamed_no", "No")
+            :onRelease(function(c)
+                popups:setState("")
+            end)
+        no.group = "save_as_unnamed_popup"
+        popups.confirmOverWrite:add(no, "5,4")
+        gooi.setGroupEnabled("save_as_unnamed_popup", false)
+    end
+    
     --[[
     -------------------------------
     |                             |
@@ -455,7 +559,7 @@ function love.load()
     ]]
     do
         local yes, no, label
-        popups.confirmDeleteNotes   = gooi.newPanel("confirm_delete_notes",app.width/4, app.height/8, app.width/2, 3*app.height/4, "grid 5x4", "confirm_delete_notes_popup")
+        popups.confirmDeleteNotes = gooi.newPanel("confirm_delete_notes",app.width/4, app.height/8, app.width/2, 3*app.height/4, "grid 5x4", "confirm_delete_notes_popup")
             :setRowspan(1, 1, 4)
             :setColspan(1, 1, 4)
         label = gooi.newLabel("confirm_delete_notes_label", "Are you sure you want to delete these notes?")
@@ -463,25 +567,28 @@ function love.load()
         label.group = "confirm_delete_notes_popup"
         popups.confirmDeleteNotes:add(label)
 
-        yes = gooi.newButton("confirm_delete_notes_yes", "Yes"):onRelease(function(c)
+        yes = gooi.newButton("confirm_delete_notes_yes", "Yes")
+            :onRelease(function(c)
                 --Code for button here
-                popups:changeState("")
+                popups:setState("")
             end)
         yes.group = "confirm_delete_notes_popup"
         popups.confirmDeleteNotes:add(yes,"5,1")
         
-        no = gooi.newButton("confirm_delete_notes_no", "No"):onRelease(function(c)
-                popups:changeState("")
+        no = gooi.newButton("confirm_delete_notes_no", "No")
+            :onRelease(function(c)
+                popups:setState("")
             end)
         no.group = "confirm_delete_notes_popup"
         popups.confirmDeleteNotes:add(no, "5,4")
+        gooi.setGroupEnabled("confirm_delete_notes_popup", false)
     end
     --popups.confirmOverWrite.layout.debug = true
     widgets = nil
 end
 
 function love.draw()
-    love.graphics.draw(paper,0,0)    
+    love.graphics.draw(app.paper,0,0)    
     love.graphics.setColor(0,0,0)
     --love.graphics.print(love.timer.getFPS(),200,200)
     for i = 1, #app.textBoxes do
@@ -521,11 +628,11 @@ function love.keypressed(key,code)
 end
 ---[[
 function love.mousepressed(x,y,m,istouch)
-    local isDragging = gooi.pressed()
+    local caught = false
+    caught = gooi.pressed()
     for _, tb in ipairs(app.textBoxes) do
-        if not isDragging then
-
-            isDragging = tb:pressed()
+        if not caught then
+            caught = tb:pressed()
         else
             tb.hasFocus = false
         end
@@ -533,7 +640,7 @@ function love.mousepressed(x,y,m,istouch)
 
     if not ((controls.x < x and x < controls.width + controls.x ) and 
     (controls.y < y and y < controls.y + controls.brushMenu.h )) and 
-    not isDragging and not popups.isShown then
+    not caught and not popups.isShown then
         brush.isDown = true
     end
 
@@ -549,7 +656,7 @@ function love.mousereleased(x,y)
     if brush.isDown and #brush.curLine > 4 then
         brush.curLine[#brush.curLine + 1] = x
         brush.curLine[#brush.curLine + 1] = y
-        love.graphics.setCanvas(paper)
+        love.graphics.setCanvas(app.paper)
             love.graphics.setLineWidth(brush.brushSize)
             if brush.isErase then
                 love.graphics.setBlendMode("replace")
@@ -563,7 +670,7 @@ function love.mousereleased(x,y)
             love.graphics.setBlendMode("alpha")
         love.graphics.setCanvas()
     elseif brush.isDown then
-        love.graphics.setCanvas(paper)
+        love.graphics.setCanvas(app.paper)
             if brush.isErase then
                 love.graphics.setBlendMode("replace")
                 love.graphics.setColor(0,0,0,0)
@@ -577,16 +684,17 @@ function love.mousereleased(x,y)
     end
     brush.isDown = false
     brush.curLine = {}
-    local mouseCaught = gooi.released()
+    local caught = false 
+    caught = gooi.released()
     for _, tb in ipairs(app.textBoxes) do
-        if not mouseCaught then
-            mouseCaught = tb:released()
+        if not caught then
+            caught = tb:released()
         else
             tb.hasFocus = false
         end
         tb.isDragging = false
     end
-    if not mouseCaught then
+    if not caught then
         love.keyboard.setTextInput(false)
     end
 end
