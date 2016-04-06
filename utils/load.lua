@@ -1,5 +1,8 @@
 loadNotes = function(dir, paper, app)
 	local textFile, err = love.filesystem.newFile(dir.."/text.txt",'r')
+    if dir == app.activeFile then
+        return
+    end
 	if err then
         gooi.get("alert_label").text = err
         popups:setState("alert")

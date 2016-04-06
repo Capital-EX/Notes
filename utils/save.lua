@@ -8,34 +8,34 @@ saveTextBoxes = function(textBoxList)
         saveFontSize = "@fontSize{"..tb.fontSize.."}"
         saved[#saved + 1]    = "@textBox{"..savePos..saveWrap..saveFontSize..saveText.."}"
     end
-    return saved
+    return table.concat(saved, "\n")
 end
 save = function(dir, textBoxList, canvas)
     saveDir = love.filesystem.getSaveDirectory()
     dir = dir:gsub("[|\\*?:<>\"/]","-")
-	if dir == "" then
+	if dir == ""  then
 		local i = 0
-		while love.filesystem.exists("unnamed"..i) do
+		while love.filesystem.exists(app.activeFile..i) do
 			i = i + 1
 		end
-		dir = "unnamed"..i
+		dir = app.activeFile..i
 		app.activeFile = dir
 	end
-    if not love.filesystem.exists(dir) then
-        love.filesystem.createDirectory(dir)
-    end
     
+    if not love.filesystem.exists(dir) then
+        suc = love.filesystem.createDirectory(dir)
+        if not suc then
+            error("failed to create save directory")
+        end
+    end
+    canvas:newImageData():encode("png",dir.."/".."paper.png")
     textBoxFile, err = love.filesystem.newFile(dir.."/".."text.txt","w")
+    if err then
+        error(err.."; "..saveDir)
+    end
     txt = saveTextBoxes(textBoxList)
-	
-    if #txt == 0 then
-       textBoxFile:write("") 
-    end
-    for k, textbox in ipairs(txt) do
-        textBoxFile:write(textbox..'\n')
-        textBoxFile:flush()
-    end
-	
+    textBoxFile:write(txt)
+    textBoxFile:flush()
     textBoxFile:close()
-    paperData = canvas:newImageData():encode("png",dir.."/".."paper.png")
+    --]]
 end

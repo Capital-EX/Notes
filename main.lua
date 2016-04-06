@@ -6,8 +6,8 @@ textBox = require 'utils.textBox'
 function love.load()
      app = {
         failedToLoad  = false,
-        activeFile    = "untitled0",
-        unsaved       = true,
+        activeFile    = "untitled_",
+        --unsaved       = true,
         samefile      = false,
         deleteTextBox = false,
         deleteNote    = false,
@@ -284,15 +284,16 @@ function love.load()
         gooi.newText("saveDirText",""),
         gooi.newButton("SaveButton", "Save"):setOrientation("center"):onRelease(function(c)      
                 local dir = gooi.get("saveDirText").text
-                if love.filesystem.exists(dir) and not app.activeFile ~= dir then
-                    popups:setState"confirm_overwrite"
+                if dir == "" and app.activeFile == "untitled_" then
+                    popups:setState "save_as_unnamed"
+                elseif activeFile ~= dir and dir ~= "" then 
+                    popups:setState "confirm_overwrite"
                 else
                     gooi.get("saveDirText").text = ""
                     save(dir, app.textBoxes, app.paper)
                 end
             end),
         gooi.newButton("loadButton","Load"):setOrientation("center"):onRelease(function(c)
-                print"Hello"
                 local dir = gooi.get("saveDirText").text
                 loadNotes(dir, app.paper, app)
             end)
@@ -535,9 +536,7 @@ function love.load()
 
         yes = gooi.newButton("save_as_unnamed_yes", "Yes")
             :onRelease(function(c)
-                local dir = gooi.get("saveDirText").text
-                gooi.get("saveDirText").text = ""
-                save(dir, app.textBoxes, app.paper)
+                save("", app.textBoxes, app.paper)
                 popups:setState("")
             end)
         yes.group = "save_as_unnamed_popup"
