@@ -72,7 +72,7 @@ textBox.meta.draw = function(self)
     love.graphics.setColor(self.bgColor)
 	love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
     love.graphics.setColor(self.dragZoneColor)
-    love.graphics.rectangle("fill", self.x, self.y - 20, self.width, 20)
+    love.graphics.rectangle("fill", self.x, self.y - 20* app.pixelScale, self.width, 20* app.pixelScale)
     love.graphics.setColor(0,0,0)
 	love.graphics.draw(self.drawnText,self.x,self.y)
 	if self.showCursor then
