@@ -72,7 +72,7 @@ textBox.meta.draw = function(self)
     love.graphics.setColor(self.bgColor)
 	love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
     love.graphics.setColor(self.dragZoneColor)
-    love.graphics.rectangle("fill", self.x, self.y - 20, self.width, 20)
+    love.graphics.rectangle("fill", self.x, self.y - 20* app.pixelScale, self.width, 20* app.pixelScale)
     love.graphics.setColor(0,0,0)
 	love.graphics.draw(self.drawnText,self.x,self.y)
 	if self.showCursor then
@@ -293,18 +293,21 @@ textBox.meta.onBackspace = function(self)
 	local _, wrapBehind = self.font:getWrap(textBehind, self.wrap)
 	if oldWrap[self.line - 1] and newWrap[self.line - 1] then
         if removedChar == ' ' then
+            print "A"
             if oldWrap[self.line - 1]:len() > newWrap[self.line - 1]:len() then
                 self.wrapIndex =  oldWrap[self.line - 1]:len() - newWrap[self.line - 1]:len() - 1
                 self.trueIndex = self.trueIndex - 1    
             else
 			 self:moveIndexLeft()
             end
-        elseif oldWrap[self.line - 1]:len() < newWrap[self.line - 1]:len() then
+        elseif oldWrap[self.line - 1]:len() < newWrap[self.line - 1]:len() and not removedChar == '\n' then
+            print "B"
             local shifted = string.utf8sub(oldWrap[self.line], 0, self.wrapIndex - 1)
             self.line = self.line - 1
             self.wrapIndex = oldWrap[self.line]:len() + shifted:len()
             self.trueIndex = self.trueIndex - 1
         else
+            print "C"
             self:moveIndexLeft()
         end
 	else
@@ -440,6 +443,7 @@ textBox.meta.released = function(self, x, y)
 					self:moveIndexLeft()
 				end
 			end
+            print(self.trueIndex)
 		end
 	else
 		self.hasFocus = false
@@ -471,8 +475,9 @@ textBox.meta.getTextCollide = function(self, x, y)
 		if loc > textWrap[line]:len() then
 			loc = textWrap[line]:len()
 		end
-		char = loc 
+		char = loc > 0 and loc or 0
 	end
+    print(line,char)
 
 	return line, char
 end
