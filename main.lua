@@ -463,7 +463,9 @@ function love.load()
 
         yes = gooi.newButton("confirm_delete_notesconfirm_paper_clear_yes", "Yes")
             :onRelease(function(c)
-                app.textBoxes = {}
+                app.textBoxes = {
+                    id = 0
+                }
                 love.graphics.setCanvas(app.paper)
                     love.graphics.clear()
                 love.graphics.setCanvas()
