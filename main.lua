@@ -72,8 +72,13 @@ function love.load()
                 if self.isDown and (self.oldmx ~= mx or self.oldmy ~= my) then
                     if #self.curLine == 0 then
                         love.graphics.setCanvas(app.paper)
+                            if self.isErase then
+                                love.graphics.setBlendMode("replace")
+                                love.graphics.setColor(0,0,0,0)
+                            else
+                                love.graphics.setColor(self.color)
+                            end
                             love.graphics.setLineStyle("smooth")
-                            love.graphics.setColor(brush.color)
                             love.graphics.circle('fill',mx,my,math.ceil(brush.brushSize/2))
                             love.graphics.setColor(255,255,255)
                         love.graphics.setCanvas()

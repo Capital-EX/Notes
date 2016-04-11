@@ -108,19 +108,20 @@ textBox.meta.update = function(self, dt)
 	end
 	self.deleteButtonY = self.height + self.y
 	self.deleteButtonX = self.width + self.x
+    local _, lineCount = self.plainText:gsub("\n","")
+    local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
+	lineCount          = #textWrap + (lineCount + 1 - #textWrap > 0 and lineCount + 1 - #textWrap or 0)
+    self.height = lineCount * self.fontHeight
+    if self.height <= self.minHeight then
+        self.height = self.minHeight        
+    end
 end
 
 textBox.meta.updateCursor = function(self)
 	local _, textWrap = self.font:getWrap(self.plainText, self.wrap)
 	self.cursorX = self.font:getWidth(string.utf8sub(textWrap[self.line] or "", 0, self.wrapIndex))
 	self.cursorY = self.line * self.fontHeight
-	local _, lineCount = self.plainText:gsub("\n","")
-	lineCount          = #textWrap + lineCount - (lineCount - #textWrap > 0 and lineCount - #textWrap or 0)
-	if lineCount * self.fontHeight > self.minHeight then
-		self.height = lineCount * self.fontHeight
-	else
-		self.height = self.minHeight
-	end
+	
 end
 
 textBox.meta.keypressed = function(self, key)
