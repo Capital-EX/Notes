@@ -1,4 +1,4 @@
-#Nötes
+# Nötes
 
 Nötes is a small application that can be used to both draw and type notes. Text is stored on "stick notes" that can be freely placed around the screen.
 
